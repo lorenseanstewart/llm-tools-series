@@ -1,0 +1,19 @@
+{
+  "name": "@llm-tools/shared-types",
+  "version": "0.0.1",
+  "description": "Shared TypeScript types for LLM tools",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "test": "echo 'No tests for types package'"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  },
+  "publishConfig": {
+    "access": "restricted"
+  }
+}
