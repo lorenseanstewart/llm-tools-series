@@ -16,9 +16,22 @@ export async function findListings(filters: ListingFilters): Promise<Listing[]> 
   }
 
   if (state) {
+    const stateMap: Record<string, string> = {
+      'oregon': 'or',
+      'washington': 'wa',
+      'california': 'ca',
+      'texas': 'tx',
+      'florida': 'fl',
+      'new york': 'ny'
+    };
+    
+    const normalizedState = state.toLowerCase();
+    const stateCode = stateMap[normalizedState] || normalizedState;
+    
     listings = listings.filter(
       (listing) =>
-        listing.address.state.toLowerCase() === state.toLowerCase(),
+        listing.address.state.toLowerCase() === stateCode ||
+        listing.address.state.toLowerCase() === normalizedState,
     );
   }
 
