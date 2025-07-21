@@ -1,8 +1,9 @@
-import { Controller, Post, Body, Get, Param, Query, Sse, Response } from "@nestjs/common";
+import { Controller, Post, Body, Get, Param, Query, Sse, Response, UseGuards } from "@nestjs/common";
 import { AgentsService } from "./agents.service";
 import { ChatHistoryService } from "./chat-history.service";
 import { ChatRequestDto } from "./dto/chat-request.dto";
 import { FastifyReply } from "fastify";
+import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 
 interface ChatResponseDto {
   success: boolean;
@@ -11,6 +12,7 @@ interface ChatResponseDto {
 }
 
 @Controller("agents")
+@UseGuards(JwtAuthGuard)
 export class AgentsController {
   constructor(
     private readonly agentsService: AgentsService,
