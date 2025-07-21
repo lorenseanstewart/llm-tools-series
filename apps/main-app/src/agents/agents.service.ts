@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import axios from "axios";
+import * as jwt from "jsonwebtoken";
 import { MCPClient } from "@llm-tools/mcp-client";
 import { MCPTool, OpenRouterMessage, ToolCall, OpenRouterResponse, Tool } from "@llm-tools/shared-types";
 import { TOOL_SELECTION_PROMPT, RESPONSE_GENERATION_PROMPT } from "./system.prompts";
@@ -15,6 +16,7 @@ export class AgentsService implements OnModuleInit {
   
   private readonly mcpClients: MCPClient[] = [];
   private tools: Tool[] = [];
+  private currentUserId?: string;
 
   constructor(
     private readonly configService: ConfigService,
@@ -25,21 +27,38 @@ export class AgentsService implements OnModuleInit {
   }
 
   async onModuleInit() {
-    // Initialize MCP clients for each server
+    // Initialize MCP clients for each server with service token
+    const serviceToken = this.generateServiceToken();
+    
     this.mcpClients.push(
       new MCPClient({
         baseURL: this.configService.get<string>("MCP_LISTINGS_URL") || "http://localhost:3001",
         timeout: 10000,
-        retries: 3
+        retries: 3,
+        authToken: serviceToken
       }),
       new MCPClient({
         baseURL: this.configService.get<string>("MCP_ANALYTICS_URL") || "http://localhost:3002",
         timeout: 10000,
-        retries: 3
+        retries: 3,
+        authToken: serviceToken
       })
     );
     
     await this.discoverTools();
+  }
+
+  private generateServiceToken(userId?: string): string {
+    const jwtSecret = this.configService.get<string>('JWT_SECRET') || 'your-secret-key';
+    return jwt.sign(
+      { 
+        serviceId: 'main-app',
+        userId: userId,
+        iat: Date.now() 
+      },
+      jwtSecret,
+      { expiresIn: '1h' }
+    );
   }
 
   private async discoverTools(): Promise<void> {
@@ -73,6 +92,15 @@ export class AgentsService implements OnModuleInit {
 
   async chat(userId: string, userMessage: string): Promise<string> {
     try {
+      // Update current user ID and refresh tokens with user context
+      this.currentUserId = userId;
+      const userToken = this.generateServiceToken(userId);
+      this.mcpClients.forEach(client => {
+        if (client.setAuthToken) {
+          client.setAuthToken(userToken);
+        }
+      });
+      
       // Step 1: Get chat history for context
       const chatHistory = await this.chatHistoryService.getChatHistory(userId, 5);
       
@@ -269,6 +297,15 @@ export class AgentsService implements OnModuleInit {
     const eventSender = new FastifyStreamEventSender(res);
     
     try {
+      // Update current user ID and refresh tokens with user context
+      this.currentUserId = userId;
+      const userToken = this.generateServiceToken(userId);
+      this.mcpClients.forEach(client => {
+        if (client.setAuthToken) {
+          client.setAuthToken(userToken);
+        }
+      });
+
       // Save user message to history
       await this.chatHistoryService.saveChatMessage(userId, {
         role: "user",

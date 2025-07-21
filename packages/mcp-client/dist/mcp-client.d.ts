@@ -3,11 +3,17 @@ export interface MCPClientOptions {
     baseURL: string;
     timeout?: number;
     retries?: number;
+    authToken?: string;
 }
 export declare class MCPClient {
     private readonly http;
     private readonly retries;
+    private authToken?;
     constructor(options: MCPClientOptions);
+    /**
+     * Set or update the authentication token
+     */
+    setAuthToken(token: string): void;
     /**
      * Discover available tools from the MCP server
      */

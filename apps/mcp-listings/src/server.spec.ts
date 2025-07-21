@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { build } from './app';
 import { LISTINGS_TOOLS } from './config/tools-config';
+import * as jwt from 'jsonwebtoken';
 
 // Mock the specific tool files that are imported by the routes
 jest.mock('./tools/find-listings', () => ({
@@ -16,8 +17,20 @@ import { sendListingReport } from './tools/send-listing-report';
 
 describe('MCP Listings Server', () => {
   let app: FastifyInstance;
+  let authToken: string;
 
   beforeAll(async () => {
+    // Generate test JWT token
+    authToken = jwt.sign(
+      { 
+        serviceId: 'test-service',
+        userId: 'test-user',
+        iat: Date.now() 
+      },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '1h' }
+    );
+    
     app = build({ logger: false });
     await app.ready();
   });
@@ -34,7 +47,10 @@ describe('MCP Listings Server', () => {
     it('should return the list of available tools', async () => {
       const response = await app.inject({
         method: 'GET',
-        url: '/tools'
+        url: '/tools',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
       });
 
       expect(response.statusCode).toBe(200);
@@ -65,6 +81,9 @@ describe('MCP Listings Server', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/tools/call',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        },
         payload: {
           name: 'findListings',
           arguments: { city: 'Portland', maxPrice: 600000 }
@@ -83,6 +102,9 @@ describe('MCP Listings Server', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/tools/call',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        },
         payload: {
           name: 'sendListingReport',
           arguments: {
@@ -101,6 +123,9 @@ describe('MCP Listings Server', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/tools/call',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        },
         payload: {
           name: 'unknownTool',
           arguments: {}
@@ -117,6 +142,9 @@ describe('MCP Listings Server', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/tools/call',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        },
         payload: {
           name: 'findListings',
           arguments: { city: 'Portland' }

@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { build } from './app';
 import { ANALYTICS_TOOLS } from './config/tools-config';
+import * as jwt from 'jsonwebtoken';
 
 // Mock the individual tool files that are imported by the routes
 jest.mock('./tools/get-listing-metrics', () => ({
@@ -21,8 +22,20 @@ import { generatePerformanceReport } from './tools/generate-performance-report';
 
 describe('MCP Analytics Server', () => {
   let app: FastifyInstance;
+  let authToken: string;
 
   beforeAll(async () => {
+    // Generate test JWT token
+    authToken = jwt.sign(
+      { 
+        serviceId: 'test-service',
+        userId: 'test-user',
+        iat: Date.now() 
+      },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '1h' }
+    );
+    
     app = build({ logger: false });
     await app.ready();
   });
@@ -39,7 +52,10 @@ describe('MCP Analytics Server', () => {
     it('should return the list of analytics tools', async () => {
       const response = await app.inject({
         method: 'GET',
-        url: '/tools'
+        url: '/tools',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
       });
 
       expect(response.statusCode).toBe(200);
@@ -75,6 +91,9 @@ describe('MCP Analytics Server', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/tools/call',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        },
         payload: {
           name: 'getListingMetrics',
           arguments: { listingIds: ['L001'] }
@@ -107,6 +126,9 @@ describe('MCP Analytics Server', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/tools/call',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        },
         payload: {
           name: 'getMarketAnalysis',
           arguments: { area: 'Portland, OR' }
@@ -135,6 +157,9 @@ describe('MCP Analytics Server', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/tools/call',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        },
         payload: {
           name: 'generatePerformanceReport',
           arguments: {
@@ -153,6 +178,9 @@ describe('MCP Analytics Server', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/tools/call',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        },
         payload: {
           name: 'unknownTool',
           arguments: {}
@@ -173,6 +201,9 @@ describe('MCP Analytics Server', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/tools/call',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        },
         payload: {
           name: 'getListingMetrics',
           arguments: { listingIds: ['L001'] }
@@ -189,6 +220,9 @@ describe('MCP Analytics Server', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/tools/call',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        },
         payload: {
           name: 'getMarketAnalysis',
           arguments: {} // Missing required 'area' field
@@ -225,7 +259,8 @@ describe('MCP Analytics Server', () => {
         method: 'POST',
         url: '/tools/call',
         headers: {
-          'content-type': 'application/json'
+          'content-type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
         },
         payload: 'invalid json'
       });
@@ -237,6 +272,9 @@ describe('MCP Analytics Server', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/tools/call',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        },
         payload: {
           arguments: { listingIds: ['L001'] }
         }

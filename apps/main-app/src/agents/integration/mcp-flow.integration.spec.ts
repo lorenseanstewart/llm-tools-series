@@ -89,7 +89,8 @@ describe('MCP Flow Integration Tests', () => {
           }
         ]
       }),
-      healthCheck: jest.fn().mockResolvedValue(true)
+      healthCheck: jest.fn().mockResolvedValue(true),
+      setAuthToken: jest.fn()
     };
 
     MockedMCPClient.mockImplementation(() => mockMCPClientInstance as any);
@@ -169,7 +170,8 @@ describe('MCP Flow Integration Tests', () => {
                 'OPENROUTER_API_KEY': 'test-api-key',
                 'YOUR_SITE_URL': 'http://localhost:3000',
                 'MCP_LISTINGS_URL': 'http://localhost:3001',
-                'MCP_ANALYTICS_URL': 'http://localhost:3002'
+                'MCP_ANALYTICS_URL': 'http://localhost:3002',
+                'JWT_SECRET': 'test-jwt-secret'
               };
               return config[key];
             })
@@ -248,7 +250,8 @@ describe('MCP Flow Integration Tests', () => {
           }
         }),
         callTool: jest.fn().mockResolvedValue({ result: [] }),
-        healthCheck: jest.fn().mockResolvedValue(false)
+        healthCheck: jest.fn().mockResolvedValue(false),
+        setAuthToken: jest.fn()
       };
 
       MockedMCPClient.mockImplementation(() => failingMockInstance as any);

@@ -8,6 +8,7 @@ const axios_1 = __importDefault(require("axios"));
 class MCPClient {
     constructor(options) {
         this.retries = options.retries || 3;
+        this.authToken = options.authToken;
         this.http = axios_1.default.create({
             baseURL: options.baseURL,
             timeout: options.timeout || 10000,
@@ -15,6 +16,19 @@ class MCPClient {
                 'Content-Type': 'application/json',
             },
         });
+        // Add request interceptor to add auth header
+        this.http.interceptors.request.use((config) => {
+            if (this.authToken) {
+                config.headers.Authorization = `Bearer ${this.authToken}`;
+            }
+            return config;
+        });
+    }
+    /**
+     * Set or update the authentication token
+     */
+    setAuthToken(token) {
+        this.authToken = token;
     }
     /**
      * Discover available tools from the MCP server

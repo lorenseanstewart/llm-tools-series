@@ -14,6 +14,7 @@ exports.AgentsService = void 0;
 const common_1 = require("@nestjs/common");
 const config_1 = require("@nestjs/config");
 const axios_1 = require("axios");
+const jwt = require("jsonwebtoken");
 const mcp_client_1 = require("@llm-tools/mcp-client");
 const system_prompts_1 = require("./system.prompts");
 const chat_history_service_1 = require("./chat-history.service");
@@ -26,22 +27,34 @@ let AgentsService = AgentsService_1 = class AgentsService {
     openrouterUrl = "https://openrouter.ai/api/v1/chat/completions";
     mcpClients = [];
     tools = [];
+    currentUserId;
     constructor(configService, chatHistoryService, streamingService) {
         this.configService = configService;
         this.chatHistoryService = chatHistoryService;
         this.streamingService = streamingService;
     }
     async onModuleInit() {
+        const serviceToken = this.generateServiceToken();
         this.mcpClients.push(new mcp_client_1.MCPClient({
             baseURL: this.configService.get("MCP_LISTINGS_URL") || "http://localhost:3001",
             timeout: 10000,
-            retries: 3
+            retries: 3,
+            authToken: serviceToken
         }), new mcp_client_1.MCPClient({
             baseURL: this.configService.get("MCP_ANALYTICS_URL") || "http://localhost:3002",
             timeout: 10000,
-            retries: 3
+            retries: 3,
+            authToken: serviceToken
         }));
         await this.discoverTools();
+    }
+    generateServiceToken(userId) {
+        const jwtSecret = this.configService.get('JWT_SECRET') || 'your-secret-key';
+        return jwt.sign({
+            serviceId: 'main-app',
+            userId: userId,
+            iat: Date.now()
+        }, jwtSecret, { expiresIn: '1h' });
     }
     async discoverTools() {
         this.logger.log("Discovering tools from MCP servers...");
@@ -69,6 +82,13 @@ let AgentsService = AgentsService_1 = class AgentsService {
     }
     async chat(userId, userMessage) {
         try {
+            this.currentUserId = userId;
+            const userToken = this.generateServiceToken(userId);
+            this.mcpClients.forEach(client => {
+                if (client.setAuthToken) {
+                    client.setAuthToken(userToken);
+                }
+            });
             const chatHistory = await this.chatHistoryService.getChatHistory(userId, 5);
             const userMsg = {
                 role: "user",
@@ -203,6 +223,13 @@ let AgentsService = AgentsService_1 = class AgentsService {
     async chatStream(userId, userMessage, res) {
         const eventSender = new streaming_service_1.FastifyStreamEventSender(res);
         try {
+            this.currentUserId = userId;
+            const userToken = this.generateServiceToken(userId);
+            this.mcpClients.forEach(client => {
+                if (client.setAuthToken) {
+                    client.setAuthToken(userToken);
+                }
+            });
             await this.chatHistoryService.saveChatMessage(userId, {
                 role: "user",
                 content: userMessage

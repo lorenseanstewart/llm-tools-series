@@ -11,8 +11,10 @@ export declare class AgentsService implements OnModuleInit {
     private readonly openrouterUrl;
     private readonly mcpClients;
     private tools;
+    private currentUserId?;
     constructor(configService: ConfigService, chatHistoryService: ChatHistoryService, streamingService: StreamingService);
     onModuleInit(): Promise<void>;
+    private generateServiceToken;
     private discoverTools;
     chat(userId: string, userMessage: string): Promise<string>;
     private callOpenRouter;

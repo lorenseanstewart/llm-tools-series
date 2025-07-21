@@ -4,7 +4,12 @@ import type { MCPTool, MCPToolCallRequest, MCPToolCallResponse } from '@llm-tool
 // Mock axios
 const mockAxiosInstance = {
   get: jest.fn(),
-  post: jest.fn()
+  post: jest.fn(),
+  interceptors: {
+    request: {
+      use: jest.fn()
+    }
+  }
 };
 
 jest.mock('axios', () => ({
@@ -145,6 +150,41 @@ describe('MCPClient', () => {
       const isHealthy = await client.healthCheck();
 
       expect(isHealthy).toBe(false);
+    });
+  });
+
+  describe('authentication', () => {
+    it('should create client with auth token', () => {
+      const clientWithAuth = new MCPClient({ 
+        baseURL, 
+        timeout: 5000, 
+        retries: 3,
+        authToken: 'test-token'
+      });
+
+      expect(clientWithAuth).toBeDefined();
+      expect(mockAxiosInstance.interceptors.request.use).toHaveBeenCalled();
+    });
+
+    it('should update auth token with setAuthToken method', () => {
+      client.setAuthToken('new-token');
+
+      // The method should exist and not throw
+      expect(client.setAuthToken).toBeDefined();
+      expect(typeof client.setAuthToken).toBe('function');
+    });
+
+    it('should call interceptor when creating client', () => {
+      // Create a fresh client to test interceptor setup
+      jest.clearAllMocks();
+      
+      const newClient = new MCPClient({ 
+        baseURL: 'http://test.com', 
+        authToken: 'test-token' 
+      });
+
+      expect(mockAxiosInstance.interceptors.request.use).toHaveBeenCalledWith(expect.any(Function));
+      expect(newClient).toBeDefined();
     });
   });
 });
