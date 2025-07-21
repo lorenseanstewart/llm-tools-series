@@ -1,6 +1,7 @@
 import { AgentsService } from "./agents.service";
 import { ChatHistoryService } from "./chat-history.service";
 import { ChatRequestDto } from "./dto/chat-request.dto";
+import { FastifyReply } from "fastify";
 interface ChatResponseDto {
     success: boolean;
     message: string;
@@ -11,6 +12,8 @@ export declare class AgentsController {
     private readonly chatHistoryService;
     constructor(agentsService: AgentsService, chatHistoryService: ChatHistoryService);
     chat(body: ChatRequestDto): Promise<ChatResponseDto>;
+    streamChat(body: ChatRequestDto, res: FastifyReply): Promise<void>;
+    private sendEvent;
     getChatHistory(userId: string, limit?: string): Promise<{
         success: boolean;
         userId: string;

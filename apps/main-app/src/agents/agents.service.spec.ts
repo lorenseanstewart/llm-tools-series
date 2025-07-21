@@ -3,6 +3,7 @@ import { ConfigService } from "@nestjs/config";
 import { Logger } from "@nestjs/common";
 import { AgentsService } from "./agents.service";
 import { ChatHistoryService } from "./chat-history.service";
+import { StreamingService } from "./streaming.service";
 import { MCPClient } from "@llm-tools/mcp-client";
 import axios from "axios";
 
@@ -15,6 +16,7 @@ const mockedAxios = axios as jest.Mocked<typeof axios>;
 describe("AgentsService", () => {
   let service: AgentsService;
   let chatHistoryService: ChatHistoryService;
+  let streamingService: StreamingService;
   let mockMCPClient: jest.Mocked<MCPClient>;
 
   const mockTools = [
@@ -65,6 +67,15 @@ describe("AgentsService", () => {
         AgentsService,
         ChatHistoryService,
         {
+          provide: StreamingService,
+          useValue: {
+            streamResponse: jest.fn().mockResolvedValue('Mocked response'),
+            sendStatusEvent: jest.fn(),
+            sendHeartbeat: jest.fn(),
+            sendToolExecutionEvent: jest.fn()
+          }
+        },
+        {
           provide: ConfigService,
           useValue: {
             get: jest.fn((key: string) => {
@@ -83,6 +94,7 @@ describe("AgentsService", () => {
 
     service = module.get<AgentsService>(AgentsService);
     chatHistoryService = module.get<ChatHistoryService>(ChatHistoryService);
+    streamingService = module.get<StreamingService>(StreamingService);
 
     // Initialize the service (normally done by NestJS lifecycle)
     await service.onModuleInit();
@@ -104,6 +116,15 @@ describe("AgentsService", () => {
         providers: [
           AgentsService,
           ChatHistoryService,
+          {
+            provide: StreamingService,
+            useValue: {
+              streamResponse: jest.fn().mockResolvedValue('Mocked response'),
+              sendStatusEvent: jest.fn(),
+              sendHeartbeat: jest.fn(),
+              sendToolExecutionEvent: jest.fn()
+            }
+          },
           {
             provide: ConfigService,
             useValue: {
@@ -345,6 +366,101 @@ describe("AgentsService", () => {
 
       expect(mockMCPClient.callTool).toHaveBeenCalledTimes(2);
       expect(result).toEqual('Success from server 2');
+    });
+  });
+
+  describe("SSE Streaming", () => {
+    it("should call streaming service for chat stream", async () => {
+      const userId = 'test-user';
+      const userMessage = 'Find me homes in Portland';
+      const mockResponse = {
+        raw: {
+          write: jest.fn(),
+          end: jest.fn(),
+          on: jest.fn()
+        }
+      } as any;
+
+      mockMCPClient.callTool.mockResolvedValue({ result: [] });
+
+      await service.chatStream(userId, userMessage, mockResponse);
+
+      // Verify streaming service methods were called
+      expect(streamingService.sendStatusEvent).toHaveBeenCalled();
+      expect(streamingService.sendHeartbeat).toHaveBeenCalled();
+    });
+
+    it("should handle tool execution with streaming events", async () => {
+      const userId = 'test-user';
+      const userMessage = 'Find homes in Seattle';
+      const mockResponse = {
+        raw: {
+          write: jest.fn(),
+          end: jest.fn(),
+          on: jest.fn()
+        }
+      } as any;
+
+      // Mock OpenRouter to return tool calls
+      mockedAxios.post.mockResolvedValueOnce({
+        data: {
+          choices: [{
+            message: {
+              role: 'assistant',
+              content: null,
+              tool_calls: [{
+                id: 'call_123',
+                type: 'function',
+                function: {
+                  name: 'findListings',
+                  arguments: JSON.stringify({ city: 'Seattle' })
+                }
+              }]
+            }
+          }]
+        }
+      });
+
+      mockMCPClient.callTool.mockResolvedValue({ 
+        result: [{ listingId: 'L001', address: { city: 'Seattle' } }] 
+      });
+
+      await service.chatStream(userId, userMessage, mockResponse);
+
+      // Verify tool execution events were sent
+      expect(streamingService.sendToolExecutionEvent).toHaveBeenCalledWith(
+        expect.anything(),
+        'findListings',
+        'starting'
+      );
+      expect(streamingService.sendToolExecutionEvent).toHaveBeenCalledWith(
+        expect.anything(),
+        'findListings',
+        'completed',
+        [{ listingId: 'L001', address: { city: 'Seattle' } }]
+      );
+    });
+
+    it("should handle streaming errors gracefully", async () => {
+      const userId = 'test-user';
+      const userMessage = 'Test message';
+      const mockResponse = {
+        raw: {
+          write: jest.fn(),
+          end: jest.fn(),
+          on: jest.fn()
+        }
+      } as any;
+
+      // Mock a streaming error
+      mockedAxios.post.mockRejectedValue(new Error('Streaming failed'));
+
+      await service.chatStream(userId, userMessage, mockResponse);
+
+      // Verify error was handled gracefully (no exception thrown)
+      expect(mockResponse.raw.write).toHaveBeenCalledWith(
+        expect.stringContaining('error')
+      );
     });
   });
 });

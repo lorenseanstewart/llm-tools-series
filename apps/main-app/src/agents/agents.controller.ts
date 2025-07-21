@@ -1,7 +1,8 @@
-import { Controller, Post, Body, Get, Param, Query } from "@nestjs/common";
+import { Controller, Post, Body, Get, Param, Query, Sse, Response } from "@nestjs/common";
 import { AgentsService } from "./agents.service";
 import { ChatHistoryService } from "./chat-history.service";
 import { ChatRequestDto } from "./dto/chat-request.dto";
+import { FastifyReply } from "fastify";
 
 interface ChatResponseDto {
   success: boolean;
@@ -28,6 +29,46 @@ export class AgentsController {
       message: response,
       timestamp: new Date().toISOString()
     };
+  }
+
+  @Post("chat/stream")
+  async streamChat(
+    @Body() body: ChatRequestDto,
+    @Response() res: FastifyReply
+  ): Promise<void> {
+    // Set up SSE headers
+    res.type('text/event-stream');
+    res.header('Cache-Control', 'no-cache');
+    res.header('Connection', 'keep-alive');
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Headers', 'Cache-Control');
+
+    try {
+      // Send immediate feedback
+      this.sendEvent(res, {
+        type: 'status',
+        message: 'Starting conversation...'
+      });
+
+      // Stream the actual chat response
+      await this.agentsService.chatStream(
+        body.userId, 
+        body.userMessage, 
+        res
+      );
+
+      // Don't call res.send() - the stream will handle closing
+    } catch (error) {
+      this.sendEvent(res, {
+        type: 'error',
+        message: error.message
+      });
+      // Don't call res.send() - the stream will handle closing
+    }
+  }
+
+  private sendEvent(res: FastifyReply, data: any): void {
+    res.raw.write(`data: ${JSON.stringify(data)}\n\n`);
   }
 
   @Get("chat-history/:userId")

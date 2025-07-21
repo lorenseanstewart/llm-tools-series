@@ -257,6 +257,24 @@ body {
     color: rgba(255, 255, 255, 0.9);
 }
 
+/* Streaming message styles */
+.message.streaming .message-content {
+    position: relative;
+}
+
+.message.streaming .message-content::after {
+    content: '▋';
+    display: inline-block;
+    animation: blink 1s infinite;
+    color: #667eea;
+    margin-left: 2px;
+}
+
+@keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
+}
+
 /* Status Area */
 .status-area {
     padding: 0 24px;

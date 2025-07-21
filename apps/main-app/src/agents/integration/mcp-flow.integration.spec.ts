@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Logger } from '@nestjs/common';
 import { AgentsService } from '../agents.service';
 import { ChatHistoryService } from '../chat-history.service';
+import { StreamingService } from '../streaming.service';
 import { MCPClient } from '@llm-tools/mcp-client';
 import axios from 'axios';
 
@@ -151,6 +152,15 @@ describe('MCP Flow Integration Tests', () => {
       providers: [
         AgentsService,
         ChatHistoryService,
+        {
+          provide: StreamingService,
+          useValue: {
+            streamResponse: jest.fn().mockResolvedValue('Mocked response'),
+            sendStatusEvent: jest.fn(),
+            sendHeartbeat: jest.fn(),
+            sendToolExecutionEvent: jest.fn()
+          }
+        },
         {
           provide: ConfigService,
           useValue: {

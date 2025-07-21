@@ -107,15 +107,21 @@ class ChatInterface {
     this.messageInput.value = '';
     this.setStreamingState(true);
     
+    // Use streaming instead of regular chat
+    await this.startStream(message, token);
+  }
+
+  async startStream(message, token) {
     try {
       // Create abort controller for cancellation
       this.currentAbortController = new AbortController();
       
-      // Send request to backend with auth token
-      const response = await fetch('/agents/chat', {
+      // Create POST request to streaming endpoint
+      const response = await fetch('/agents/chat/stream', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'text/event-stream',
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
@@ -137,20 +143,143 @@ class ChatInterface {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const result = await response.json();
-      this.addAssistantMessage(result.message || 'Sorry, I encountered an error processing your request.');
+      // Process the stream
+      await this.processStream(response.body.getReader());
       
     } catch (error) {
       if (error.name === 'AbortError') {
-        // Request was cancelled - don't show error message
         console.log('Request was cancelled');
+        this.updateStatus('Request cancelled', 'status-message');
       } else {
-        console.error('Chat error:', error);
+        console.error('Stream error:', error);
         this.addAssistantMessage('Sorry, I encountered an error. Please make sure all services are running and try again.');
       }
     } finally {
       this.setStreamingState(false);
       this.currentAbortController = null;
+    }
+  }
+
+  async processStream(reader) {
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let currentMessageDiv = null;
+    let accumulatedContent = '';
+    
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      
+      // Process SSE data chunks
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      
+      // Keep the last incomplete line in the buffer
+      buffer = lines.pop() || '';
+      
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          try {
+            const data = JSON.parse(line.slice(6));
+            
+            // Create message div on first token
+            if (data.type === 'token' && !currentMessageDiv) {
+              currentMessageDiv = this.createStreamingMessage();
+            }
+            
+            // Handle the event
+            this.handleStreamEvent(data, currentMessageDiv);
+            
+            // Track accumulated content
+            if (data.type === 'token') {
+              accumulatedContent = data.accumulated || accumulatedContent + data.content;
+            }
+          } catch (e) {
+            console.error('Failed to parse SSE data:', e);
+          }
+        }
+      }
+    }
+  }
+
+  handleStreamEvent(data, currentMessageDiv) {
+    switch (data.type) {
+      case 'status':
+        this.updateStatus(data.message, 'status-message');
+        break;
+        
+      case 'token':
+        if (currentMessageDiv) {
+          this.updateStreamingMessage(currentMessageDiv, data.accumulated || data.content);
+        }
+        break;
+        
+      case 'tool-execution':
+        this.updateToolStatus(data);
+        break;
+        
+      case 'complete':
+        this.clearStatus();
+        if (currentMessageDiv) {
+          currentMessageDiv.classList.remove('streaming');
+        }
+        break;
+        
+      case 'error':
+        this.updateStatus(`Error: ${data.message}`, 'error-status');
+        if (currentMessageDiv && !currentMessageDiv.querySelector('.message-content').innerHTML) {
+          currentMessageDiv.remove();
+        }
+        break;
+        
+      case 'cancelled':
+        this.updateStatus('Request cancelled', 'status-message');
+        break;
+        
+      case 'heartbeat':
+        // Connection check - no action needed
+        break;
+    }
+  }
+
+  createStreamingMessage() {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message assistant-message streaming';
+    
+    messageDiv.innerHTML = `
+      <div class="message-avatar">🤖</div>
+      <div class="message-content"></div>
+    `;
+    
+    this.messageContainer.appendChild(messageDiv);
+    this.scrollToBottom();
+    
+    return messageDiv;
+  }
+
+  updateStreamingMessage(messageDiv, content) {
+    const contentDiv = messageDiv.querySelector('.message-content');
+    contentDiv.innerHTML = this.formatMessage(content);
+    this.scrollToBottom();
+  }
+
+  updateToolStatus(data) {
+    let message = '';
+    
+    switch (data.status) {
+      case 'starting':
+        message = `Executing ${data.tool}...`;
+        break;
+      case 'completed':
+        message = `Completed ${data.tool}`;
+        break;
+      case 'failed':
+        message = `Failed to execute ${data.tool}: ${data.error}`;
+        break;
+    }
+    
+    if (message) {
+      this.updateStatus(message, 'tool-status');
     }
   }
 

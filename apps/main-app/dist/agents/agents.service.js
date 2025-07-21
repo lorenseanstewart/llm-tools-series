@@ -17,16 +17,19 @@ const axios_1 = require("axios");
 const mcp_client_1 = require("@llm-tools/mcp-client");
 const system_prompts_1 = require("./system.prompts");
 const chat_history_service_1 = require("./chat-history.service");
+const streaming_service_1 = require("./streaming.service");
 let AgentsService = AgentsService_1 = class AgentsService {
     configService;
     chatHistoryService;
+    streamingService;
     logger = new common_1.Logger(AgentsService_1.name);
     openrouterUrl = "https://openrouter.ai/api/v1/chat/completions";
     mcpClients = [];
     tools = [];
-    constructor(configService, chatHistoryService) {
+    constructor(configService, chatHistoryService, streamingService) {
         this.configService = configService;
         this.chatHistoryService = chatHistoryService;
+        this.streamingService = streamingService;
     }
     async onModuleInit() {
         this.mcpClients.push(new mcp_client_1.MCPClient({
@@ -197,11 +200,123 @@ let AgentsService = AgentsService_1 = class AgentsService {
         }
         return content;
     }
+    async chatStream(userId, userMessage, res) {
+        const eventSender = new streaming_service_1.FastifyStreamEventSender(res);
+        try {
+            await this.chatHistoryService.saveChatMessage(userId, {
+                role: "user",
+                content: userMessage
+            });
+            this.streamingService.sendStatusEvent(eventSender, 'Discovering available tools...');
+            this.streamingService.sendHeartbeat(eventSender);
+            const history = await this.chatHistoryService.getChatHistory(userId, 5);
+            const messages = [
+                {
+                    role: "system",
+                    content: system_prompts_1.TOOL_SELECTION_PROMPT
+                },
+                ...history,
+                {
+                    role: "user",
+                    content: userMessage
+                }
+            ];
+            const toolResponse = await this.callOpenRouter("moonshotai/kimi-k2", messages, this.tools);
+            if (toolResponse?.choices?.[0]?.message?.tool_calls) {
+                const toolCall = toolResponse.choices[0].message.tool_calls[0];
+                await this.executeToolWithEvents(toolCall, eventSender);
+                const toolResult = await this.executeTool(toolCall);
+                const finalContent = await this.streamFinalResponseWithTool(userId, userMessage, eventSender, toolCall, toolResult);
+                await this.chatHistoryService.saveChatMessage(userId, {
+                    role: "assistant",
+                    content: finalContent
+                });
+            }
+            else {
+                const finalContent = await this.streamFinalResponseDirect(userId, userMessage, eventSender);
+                await this.chatHistoryService.saveChatMessage(userId, {
+                    role: "assistant",
+                    content: finalContent
+                });
+            }
+        }
+        catch (error) {
+            this.logger.error("Stream chat error:", error);
+            eventSender.sendEvent({
+                type: 'error',
+                message: error.message || "An error occurred during streaming"
+            });
+            eventSender.end();
+        }
+    }
+    async executeToolWithEvents(toolCall, eventSender) {
+        this.streamingService.sendToolExecutionEvent(eventSender, toolCall.function.name, 'starting');
+        try {
+            const result = await this.executeTool(toolCall);
+            this.streamingService.sendToolExecutionEvent(eventSender, toolCall.function.name, 'completed', result);
+        }
+        catch (error) {
+            this.streamingService.sendToolExecutionEvent(eventSender, toolCall.function.name, 'failed', undefined, error.message);
+            throw error;
+        }
+    }
+    async streamFinalResponseWithTool(userId, userMessage, eventSender, toolCall, toolResult) {
+        const chatHistory = await this.chatHistoryService.getChatHistory(userId, 3);
+        const finalUserMessage = this.buildToolContextMessage(userMessage, toolCall, toolResult);
+        const messages = [
+            {
+                role: "system",
+                content: system_prompts_1.RESPONSE_GENERATION_PROMPT
+            },
+            ...chatHistory,
+            {
+                role: "user",
+                content: finalUserMessage
+            }
+        ];
+        return await this.streamingService.streamResponse(messages, eventSender);
+    }
+    async streamFinalResponseDirect(userId, userMessage, eventSender) {
+        const chatHistory = await this.chatHistoryService.getChatHistory(userId, 3);
+        const messages = [
+            {
+                role: "system",
+                content: system_prompts_1.RESPONSE_GENERATION_PROMPT
+            },
+            ...chatHistory,
+            {
+                role: "user",
+                content: userMessage
+            }
+        ];
+        return await this.streamingService.streamResponse(messages, eventSender);
+    }
+    buildToolContextMessage(userMessage, toolCall, toolResult) {
+        if (toolCall.function.name === "findListings") {
+            return `${userMessage}\n\nI searched for listings and found ${Array.isArray(toolResult) ? toolResult.length : 'some'} properties. Please present these listings in a friendly, readable format:\n\n${JSON.stringify(toolResult, null, 2)}`;
+        }
+        else if (toolCall.function.name === "sendListingReport") {
+            return `${userMessage}\n\nReport result: ${JSON.stringify(toolResult)}`;
+        }
+        else if (toolCall.function.name === "getListingMetrics") {
+            return `${userMessage}\n\nAnalytics data: ${JSON.stringify(toolResult)}`;
+        }
+        else if (toolCall.function.name === "getMarketAnalysis") {
+            return `${userMessage}\n\nMarket analysis: ${JSON.stringify(toolResult)}`;
+        }
+        else if (toolCall.function.name === "generatePerformanceReport") {
+            return `${userMessage}\n\nPerformance report: ${JSON.stringify(toolResult)}`;
+        }
+        else {
+            return `${userMessage}\n\nTool result: ${JSON.stringify(toolResult)}`;
+        }
+    }
 };
 exports.AgentsService = AgentsService;
 exports.AgentsService = AgentsService = AgentsService_1 = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [config_1.ConfigService,
-        chat_history_service_1.ChatHistoryService])
+        chat_history_service_1.ChatHistoryService,
+        streaming_service_1.StreamingService])
 ], AgentsService);
 //# sourceMappingURL=agents.service.js.map

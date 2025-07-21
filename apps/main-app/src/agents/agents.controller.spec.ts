@@ -3,13 +3,15 @@ import { AgentsController } from './agents.controller';
 import { AgentsService } from './agents.service';
 import { ChatHistoryService } from './chat-history.service';
 import { ChatRequestDto } from './dto/chat-request.dto';
+import { FastifyReply } from 'fastify';
 
 describe('AgentsController', () => {
   let controller: AgentsController;
   let agentsService: AgentsService;
 
   const mockAgentsService = {
-    chat: jest.fn()
+    chat: jest.fn(),
+    chatStream: jest.fn()
   };
 
   const mockChatHistoryService = {
@@ -273,6 +275,221 @@ describe('AgentsController', () => {
       expect(result.success).toBe(true);
       expect(result.message).toBe(complexResponse);
       expect(typeof result.message).toBe('string');
+    });
+  });
+
+  describe('streamChat (SSE)', () => {
+    let mockResponse: jest.Mocked<FastifyReply>;
+    let mockRaw: any;
+
+    beforeEach(() => {
+      mockRaw = {
+        write: jest.fn(),
+        end: jest.fn(),
+        on: jest.fn()
+      };
+
+      mockResponse = {
+        type: jest.fn().mockReturnThis(),
+        header: jest.fn().mockReturnThis(),
+        raw: mockRaw
+      } as any;
+    });
+
+    it('should set proper SSE headers', async () => {
+      const chatRequest: ChatRequestDto = {
+        userId: 'test-user',
+        userMessage: "Find me listings in Seattle"
+      };
+
+      mockAgentsService.chatStream.mockResolvedValue(undefined);
+
+      await controller.streamChat(chatRequest, mockResponse);
+
+      expect(mockResponse.type).toHaveBeenCalledWith('text/event-stream');
+      expect(mockResponse.header).toHaveBeenCalledWith('Cache-Control', 'no-cache');
+      expect(mockResponse.header).toHaveBeenCalledWith('Connection', 'keep-alive');
+      expect(mockResponse.header).toHaveBeenCalledWith('Access-Control-Allow-Origin', '*');
+      expect(mockResponse.header).toHaveBeenCalledWith('Access-Control-Allow-Headers', 'Cache-Control');
+    });
+
+    it('should send initial status event', async () => {
+      const chatRequest: ChatRequestDto = {
+        userId: 'test-user',
+        userMessage: "Test message"
+      };
+
+      mockAgentsService.chatStream.mockResolvedValue(undefined);
+
+      await controller.streamChat(chatRequest, mockResponse);
+
+      const expectedEvent = JSON.stringify({
+        type: 'status',
+        message: 'Starting conversation...'
+      });
+
+      expect(mockRaw.write).toHaveBeenCalledWith(`data: ${expectedEvent}\n\n`);
+      expect(agentsService.chatStream).toHaveBeenCalledWith(
+        chatRequest.userId,
+        chatRequest.userMessage,
+        mockResponse
+      );
+    });
+
+    it('should handle service errors and send error event', async () => {
+      const chatRequest: ChatRequestDto = {
+        userId: 'test-user',
+        userMessage: "Test message"
+      };
+
+      const serviceError = new Error("Stream processing failed");
+      mockAgentsService.chatStream.mockRejectedValue(serviceError);
+
+      await controller.streamChat(chatRequest, mockResponse);
+
+      const expectedErrorEvent = JSON.stringify({
+        type: 'error',
+        message: serviceError.message
+      });
+
+      expect(mockRaw.write).toHaveBeenCalledWith(`data: ${expectedErrorEvent}\n\n`);
+    });
+
+    it('should handle real estate specific streaming requests', async () => {
+      const chatRequest: ChatRequestDto = {
+        userId: 'test-user',
+        userMessage: "Show me 3-bedroom homes in Portland under $800,000"
+      };
+
+      mockAgentsService.chatStream.mockResolvedValue(undefined);
+
+      await controller.streamChat(chatRequest, mockResponse);
+
+      expect(agentsService.chatStream).toHaveBeenCalledWith(
+        chatRequest.userId,
+        chatRequest.userMessage,
+        mockResponse
+      );
+    });
+
+    it('should handle long user messages in streaming', async () => {
+      const longMessage = "Find me properties ".repeat(100);
+      const chatRequest: ChatRequestDto = {
+        userId: 'test-user',
+        userMessage: longMessage
+      };
+
+      mockAgentsService.chatStream.mockResolvedValue(undefined);
+
+      await controller.streamChat(chatRequest, mockResponse);
+
+      expect(agentsService.chatStream).toHaveBeenCalledWith(
+        chatRequest.userId,
+        longMessage,
+        mockResponse
+      );
+    });
+
+    it('should handle special characters in streaming requests', async () => {
+      const specialMessage = "Find listings with $500,000 budget & 3+ bedrooms!";
+      const chatRequest: ChatRequestDto = {
+        userId: 'test-user',
+        userMessage: specialMessage
+      };
+
+      mockAgentsService.chatStream.mockResolvedValue(undefined);
+
+      await controller.streamChat(chatRequest, mockResponse);
+
+      expect(agentsService.chatStream).toHaveBeenCalledWith(
+        chatRequest.userId,
+        specialMessage,
+        mockResponse
+      );
+    });
+
+    it('should handle concurrent streaming requests', async () => {
+      const chatRequest1: ChatRequestDto = {
+        userId: 'test-user-1',
+        userMessage: "First streaming message"
+      };
+      const chatRequest2: ChatRequestDto = {
+        userId: 'test-user-2',
+        userMessage: "Second streaming message"
+      };
+
+      const mockResponse1 = { ...mockResponse };
+      const mockResponse2 = { ...mockResponse };
+
+      mockAgentsService.chatStream.mockResolvedValue(undefined);
+
+      await Promise.all([
+        controller.streamChat(chatRequest1, mockResponse1 as any),
+        controller.streamChat(chatRequest2, mockResponse2 as any)
+      ]);
+
+      expect(agentsService.chatStream).toHaveBeenCalledTimes(2);
+      expect(agentsService.chatStream).toHaveBeenCalledWith(
+        chatRequest1.userId,
+        chatRequest1.userMessage,
+        mockResponse1
+      );
+      expect(agentsService.chatStream).toHaveBeenCalledWith(
+        chatRequest2.userId,
+        chatRequest2.userMessage,
+        mockResponse2
+      );
+    });
+
+    it('should test sendEvent helper method', async () => {
+      const testData = {
+        type: 'test',
+        message: 'Test event'
+      };
+
+      // Access private method through type assertion
+      const sendEvent = (controller as any).sendEvent;
+      sendEvent(mockResponse, testData);
+
+      const expectedEvent = JSON.stringify(testData);
+      expect(mockRaw.write).toHaveBeenCalledWith(`data: ${expectedEvent}\n\n`);
+    });
+
+    it('should handle undefined error message', async () => {
+      const chatRequest: ChatRequestDto = {
+        userId: 'test-user',
+        userMessage: "Test message"
+      };
+
+      const serviceError = new Error();
+      serviceError.message = undefined as any;
+      mockAgentsService.chatStream.mockRejectedValue(serviceError);
+
+      await controller.streamChat(chatRequest, mockResponse);
+
+      const expectedErrorEvent = JSON.stringify({
+        type: 'error',
+        message: undefined
+      });
+
+      expect(mockRaw.write).toHaveBeenCalledWith(`data: ${expectedErrorEvent}\n\n`);
+    });
+
+    it('should handle empty user message in streaming', async () => {
+      const chatRequest: ChatRequestDto = {
+        userId: 'test-user',
+        userMessage: ""
+      };
+
+      mockAgentsService.chatStream.mockResolvedValue(undefined);
+
+      await controller.streamChat(chatRequest, mockResponse);
+
+      expect(agentsService.chatStream).toHaveBeenCalledWith(
+        chatRequest.userId,
+        "",
+        mockResponse
+      );
     });
   });
 });

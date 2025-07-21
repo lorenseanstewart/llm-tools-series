@@ -32,6 +32,29 @@ let AgentsController = class AgentsController {
             timestamp: new Date().toISOString()
         };
     }
+    async streamChat(body, res) {
+        res.type('text/event-stream');
+        res.header('Cache-Control', 'no-cache');
+        res.header('Connection', 'keep-alive');
+        res.header('Access-Control-Allow-Origin', '*');
+        res.header('Access-Control-Allow-Headers', 'Cache-Control');
+        try {
+            this.sendEvent(res, {
+                type: 'status',
+                message: 'Starting conversation...'
+            });
+            await this.agentsService.chatStream(body.userId, body.userMessage, res);
+        }
+        catch (error) {
+            this.sendEvent(res, {
+                type: 'error',
+                message: error.message
+            });
+        }
+    }
+    sendEvent(res, data) {
+        res.raw.write(`data: ${JSON.stringify(data)}\n\n`);
+    }
     async getChatHistory(userId, limit) {
         const historyLimit = limit ? parseInt(limit) : 10;
         const history = await this.chatHistoryService.getChatHistory(userId, historyLimit);
@@ -60,6 +83,14 @@ __decorate([
     __metadata("design:paramtypes", [chat_request_dto_1.ChatRequestDto]),
     __metadata("design:returntype", Promise)
 ], AgentsController.prototype, "chat", null);
+__decorate([
+    (0, common_1.Post)("chat/stream"),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Response)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [chat_request_dto_1.ChatRequestDto, Object]),
+    __metadata("design:returntype", Promise)
+], AgentsController.prototype, "streamChat", null);
 __decorate([
     (0, common_1.Get)("chat-history/:userId"),
     __param(0, (0, common_1.Param)("userId")),

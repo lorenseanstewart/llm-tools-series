@@ -19,7 +19,7 @@ module.exports = {
       }
     }],
   },
-  setupFilesAfterEnv: ['<rootDir>/../test/test/jest.setup.ts'],
+  setupFilesAfterEnv: ['<rootDir>/../test/jest.setup.ts'],
   collectCoverageFrom: [
     '**/*.(t|j)s',
     '!**/*.spec.ts',

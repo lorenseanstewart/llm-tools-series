@@ -11,12 +11,13 @@ const common_1 = require("@nestjs/common");
 const agents_service_1 = require("./agents.service");
 const agents_controller_1 = require("./agents.controller");
 const chat_history_service_1 = require("./chat-history.service");
+const streaming_service_1 = require("./streaming.service");
 let AgentsModule = class AgentsModule {
 };
 exports.AgentsModule = AgentsModule;
 exports.AgentsModule = AgentsModule = __decorate([
     (0, common_1.Module)({
-        providers: [agents_service_1.AgentsService, chat_history_service_1.ChatHistoryService],
+        providers: [agents_service_1.AgentsService, chat_history_service_1.ChatHistoryService, streaming_service_1.StreamingService],
         exports: [agents_service_1.AgentsService, chat_history_service_1.ChatHistoryService],
         controllers: [agents_controller_1.AgentsController],
     })
