@@ -2,6 +2,10 @@
 /dist
 /node_modules
 /build
+dist/
+node_modules/
+**/dist/
+**/node_modules/
 
 # Logs
 logs
@@ -41,6 +45,9 @@ lerna-debug.log*
 .env.test.local
 .env.production.local
 .env.local
+
+# Database files
+auth.db
 
 # temp directory
 .temp

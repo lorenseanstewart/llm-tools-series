@@ -4,7 +4,7 @@ exports.toolsRoutes = toolsRoutes;
 const find_listings_1 = require("../tools/find-listings");
 const send_listing_report_1 = require("../tools/send-listing-report");
 const tools_config_1 = require("../config/tools-config");
-function toolsRoutes(fastify) {
+async function toolsRoutes(fastify) {
     // Tool discovery endpoint
     fastify.get('/tools', async (_, reply) => {
         reply.send(tools_config_1.LISTINGS_TOOLS);
