@@ -54,7 +54,8 @@ describe("AgentsService", () => {
         }
       ]),
       callTool: jest.fn(),
-      healthCheck: jest.fn().mockResolvedValue(true)
+      healthCheck: jest.fn().mockResolvedValue(true),
+      setAuthToken: jest.fn()
     } as any;
 
     // Mock the MCPClient constructor
@@ -72,7 +73,8 @@ describe("AgentsService", () => {
                 'OPENROUTER_API_KEY': 'test-api-key',
                 'YOUR_SITE_URL': 'http://localhost:3000',
                 'MCP_LISTINGS_URL': 'http://localhost:3001',
-                'MCP_ANALYTICS_URL': 'http://localhost:3002'
+                'MCP_ANALYTICS_URL': 'http://localhost:3002',
+                'JWT_SECRET': 'test-secret'
               };
               return config[key];
             })

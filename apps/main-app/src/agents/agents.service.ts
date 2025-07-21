@@ -92,7 +92,11 @@ export class AgentsService implements OnModuleInit {
       // Update current user ID and refresh tokens with user context
       this.currentUserId = userId;
       const userToken = this.generateServiceToken(userId);
-      this.mcpClients.forEach(client => client.setAuthToken(userToken));
+      this.mcpClients.forEach(client => {
+        if (client.setAuthToken) {
+          client.setAuthToken(userToken);
+        }
+      });
       
       // Step 1: Get chat history for context
       const chatHistory = await this.chatHistoryService.getChatHistory(userId, 5);

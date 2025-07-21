@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { build } from './app';
 import { ANALYTICS_TOOLS } from './config/tools-config';
+import jwt from 'jsonwebtoken';
 
 // Mock the individual tool files that are imported by the routes
 jest.mock('./tools/get-listing-metrics', () => ({
@@ -23,6 +24,7 @@ describe('MCP Analytics Server', () => {
   let app: FastifyInstance;
 
   beforeAll(async () => {
+    process.env.JWT_SECRET = 'test-secret';
     app = build({ logger: false });
     await app.ready();
   });
@@ -35,11 +37,54 @@ describe('MCP Analytics Server', () => {
     jest.clearAllMocks();
   });
 
-  describe('GET /tools', () => {
-    it('should return the list of analytics tools', async () => {
+  describe('Authentication', () => {
+    it('should reject requests without auth token', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/tools/call',
+        payload: { name: 'getListingMetrics', arguments: { listingIds: ['L001'] } }
+      });
+
+      expect(response.statusCode).toBe(401);
+      const body = JSON.parse(response.body);
+      expect(body.error).toBe('Access token required');
+    });
+
+    it('should reject requests with invalid token', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/tools/call',
+        headers: {
+          'Authorization': 'Bearer invalid-token'
+        },
+        payload: { name: 'getListingMetrics', arguments: { listingIds: ['L001'] } }
+      });
+
+      expect(response.statusCode).toBe(403);
+      const body = JSON.parse(response.body);
+      expect(body.error).toBe('Invalid or expired token');
+    });
+
+    it('should reject GET /tools without auth token', async () => {
       const response = await app.inject({
         method: 'GET',
         url: '/tools'
+      });
+
+      expect(response.statusCode).toBe(401);
+    });
+  });
+
+  describe('GET /tools', () => {
+    it('should return the list of analytics tools', async () => {
+      const token = jwt.sign({ serviceId: 'main-app' }, 'test-secret');
+      
+      const response = await app.inject({
+        method: 'GET',
+        url: '/tools',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
 
       expect(response.statusCode).toBe(200);
@@ -57,6 +102,7 @@ describe('MCP Analytics Server', () => {
 
   describe('POST /tools/call', () => {
     it('should execute getListingMetrics successfully', async () => {
+      const token = jwt.sign({ serviceId: 'main-app' }, 'test-secret');
       const mockMetrics = [
         {
           listingId: 'L001',
@@ -75,6 +121,9 @@ describe('MCP Analytics Server', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/tools/call',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
         payload: {
           name: 'getListingMetrics',
           arguments: { listingIds: ['L001'] }
@@ -87,6 +136,7 @@ describe('MCP Analytics Server', () => {
     });
 
     it('should execute getMarketAnalysis successfully', async () => {
+      const token = jwt.sign({ serviceId: 'main-app' }, 'test-secret');
       const mockAnalysis = {
         area: 'Portland, OR',
         averagePrice: 650000,
@@ -107,6 +157,9 @@ describe('MCP Analytics Server', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/tools/call',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
         payload: {
           name: 'getMarketAnalysis',
           arguments: { area: 'Portland, OR' }
@@ -119,6 +172,7 @@ describe('MCP Analytics Server', () => {
     });
 
     it('should execute generatePerformanceReport successfully', async () => {
+      const token = jwt.sign({ serviceId: 'main-app' }, 'test-secret');
       const mockReport = {
         reportId: 'RPT-123',
         generatedAt: new Date().toISOString(),
@@ -135,6 +189,9 @@ describe('MCP Analytics Server', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/tools/call',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
         payload: {
           name: 'generatePerformanceReport',
           arguments: {
@@ -150,9 +207,14 @@ describe('MCP Analytics Server', () => {
     });
 
     it('should handle unknown tools with 400 error', async () => {
+      const token = jwt.sign({ serviceId: 'main-app' }, 'test-secret');
+      
       const response = await app.inject({
         method: 'POST',
         url: '/tools/call',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
         payload: {
           name: 'unknownTool',
           arguments: {}
@@ -166,6 +228,7 @@ describe('MCP Analytics Server', () => {
     });
 
     it('should handle tool execution errors', async () => {
+      const token = jwt.sign({ serviceId: 'main-app' }, 'test-secret');
       (getListingMetrics as jest.Mock).mockRejectedValueOnce(
         new Error('Analytics database unavailable')
       );
@@ -173,6 +236,9 @@ describe('MCP Analytics Server', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/tools/call',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
         payload: {
           name: 'getListingMetrics',
           arguments: { listingIds: ['L001'] }
@@ -186,9 +252,14 @@ describe('MCP Analytics Server', () => {
     });
 
     it('should validate required arguments', async () => {
+      const token = jwt.sign({ serviceId: 'main-app' }, 'test-secret');
+      
       const response = await app.inject({
         method: 'POST',
         url: '/tools/call',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
         payload: {
           name: 'getMarketAnalysis',
           arguments: {} // Missing required 'area' field
@@ -234,9 +305,14 @@ describe('MCP Analytics Server', () => {
     });
 
     it('should handle missing tool name', async () => {
+      const token = jwt.sign({ serviceId: 'main-app' }, 'test-secret');
+      
       const response = await app.inject({
         method: 'POST',
         url: '/tools/call',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
         payload: {
           arguments: { listingIds: ['L001'] }
         }
