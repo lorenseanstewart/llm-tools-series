@@ -297,6 +297,107 @@ chmod +x scripts/start.sh
 ./scripts/start.sh
 ```
 
+### 📦 Understanding NPM Workspace Scripts
+
+This project uses **NPM Workspaces** to manage multiple packages in a monorepo. Many developers may not be familiar with this setup, so here's a breakdown of the most important workspace commands:
+
+#### Root-Level Commands (run from project root)
+
+**Development Commands:**
+```bash
+# Start all services in development mode
+npm run dev
+
+# Start individual services  
+npm run dev:main-app      # Only the main NestJS app
+npm run dev:mcp-listings  # Only the listings MCP server
+npm run dev:mcp-analytics # Only the analytics MCP server
+```
+
+**Build Commands:**
+```bash
+# Build everything (packages first, then apps)
+npm run build
+
+# Build only shared packages (types and mcp-client)
+npm run build:packages
+
+# Build only the application services
+npm run build:apps
+```
+
+**Testing Commands:**
+```bash
+# Run all tests across all workspaces
+npm run test
+
+# Test individual services
+npm run test:main-app
+npm run test:mcp-listings  
+npm run test:mcp-analytics
+```
+
+**Production Commands:**
+```bash
+# Start all services in production mode
+npm run start
+
+# Start individual services in production
+npm run start:main-app
+npm run start:mcp-listings
+npm run start:mcp-analytics
+```
+
+#### Workspace-Specific Commands
+
+You can run commands in specific workspaces using the `-w` flag:
+
+```bash
+# Install a dependency in a specific workspace
+npm install lodash -w apps/main-app
+npm install fastify -w apps/mcp-listings
+
+# Run workspace-specific scripts
+npm run test -w apps/main-app
+npm run build -w packages/shared-types
+npm run start:dev -w apps/main-app
+```
+
+#### Working Within Individual Workspaces
+
+You can also `cd` into any workspace and run commands normally:
+
+```bash
+# Navigate to a workspace
+cd apps/main-app
+
+# Run commands as usual (npm workspaces are transparent)
+npm run test
+npm run start:dev
+npm install express
+```
+
+#### Key Workspace Benefits
+
+1. **Shared Dependencies**: Common packages like TypeScript, Jest are installed once at the root
+2. **Cross-Package References**: Packages can import from each other (`@llm-tools/shared-types`)
+3. **Coordinated Commands**: Run tests/builds across all packages with one command
+4. **Version Management**: Keep related packages in sync
+
+#### Troubleshooting Workspace Issues
+
+If you encounter "module not found" errors:
+
+```bash
+# Rebuild all packages and clear node_modules
+npm run clean
+rm -rf node_modules package-lock.json
+npm install
+npm run build:packages
+```
+
+The workspace setup ensures that all packages can import shared types and utilities while maintaining clear boundaries between services.
+
 ### Testing
 
 ```bash
