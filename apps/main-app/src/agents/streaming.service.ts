@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import { FastifyReply } from 'fastify';
@@ -112,7 +112,7 @@ export class StreamingService {
 
   constructor(
     private readonly configService: ConfigService,
-    private readonly streamProcessor: StreamProcessor = new OpenRouterStreamProcessor()
+    @Inject('STREAM_PROCESSOR') private readonly streamProcessor: StreamProcessor
   ) {}
 
   /**

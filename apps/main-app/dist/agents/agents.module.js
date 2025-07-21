@@ -17,7 +17,15 @@ let AgentsModule = class AgentsModule {
 exports.AgentsModule = AgentsModule;
 exports.AgentsModule = AgentsModule = __decorate([
     (0, common_1.Module)({
-        providers: [agents_service_1.AgentsService, chat_history_service_1.ChatHistoryService, streaming_service_1.StreamingService],
+        providers: [
+            agents_service_1.AgentsService,
+            chat_history_service_1.ChatHistoryService,
+            streaming_service_1.StreamingService,
+            {
+                provide: 'STREAM_PROCESSOR',
+                useClass: streaming_service_1.OpenRouterStreamProcessor
+            }
+        ],
         exports: [agents_service_1.AgentsService, chat_history_service_1.ChatHistoryService],
         controllers: [agents_controller_1.AgentsController],
     })

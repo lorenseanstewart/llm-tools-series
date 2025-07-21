@@ -30,7 +30,7 @@ export declare class StreamingService {
     private readonly streamProcessor;
     private readonly logger;
     private readonly openrouterUrl;
-    constructor(configService: ConfigService, streamProcessor?: StreamProcessor);
+    constructor(configService: ConfigService, streamProcessor: StreamProcessor);
     streamResponse(messages: OpenRouterMessage[], eventSender: StreamEventSender, onComplete?: (content: string) => void): Promise<string>;
     sendStatusEvent(eventSender: StreamEventSender, message: string): void;
     sendToolExecutionEvent(eventSender: StreamEventSender, tool: string, status: 'starting' | 'completed' | 'failed', result?: any, error?: string): void;

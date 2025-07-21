@@ -8,6 +8,9 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
 var StreamingService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StreamingService = exports.OpenRouterStreamProcessor = exports.FastifyStreamEventSender = void 0;
@@ -62,7 +65,7 @@ let StreamingService = StreamingService_1 = class StreamingService {
     streamProcessor;
     logger = new common_1.Logger(StreamingService_1.name);
     openrouterUrl = "https://openrouter.ai/api/v1/chat/completions";
-    constructor(configService, streamProcessor = new OpenRouterStreamProcessor()) {
+    constructor(configService, streamProcessor) {
         this.configService = configService;
         this.streamProcessor = streamProcessor;
     }
@@ -172,6 +175,7 @@ let StreamingService = StreamingService_1 = class StreamingService {
 exports.StreamingService = StreamingService;
 exports.StreamingService = StreamingService = StreamingService_1 = __decorate([
     (0, common_1.Injectable)(),
+    __param(1, (0, common_1.Inject)('STREAM_PROCESSOR')),
     __metadata("design:paramtypes", [config_1.ConfigService, Object])
 ], StreamingService);
 //# sourceMappingURL=streaming.service.js.map
