@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const agents_service_1 = require("./agents.service");
 const chat_history_service_1 = require("./chat-history.service");
 const chat_request_dto_1 = require("./dto/chat-request.dto");
+const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
 let AgentsController = class AgentsController {
     agentsService;
     chatHistoryService;
@@ -107,6 +108,7 @@ __decorate([
 ], AgentsController.prototype, "getChatHistoryStats", null);
 exports.AgentsController = AgentsController = __decorate([
     (0, common_1.Controller)("agents"),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __metadata("design:paramtypes", [agents_service_1.AgentsService,
         chat_history_service_1.ChatHistoryService])
 ], AgentsController);

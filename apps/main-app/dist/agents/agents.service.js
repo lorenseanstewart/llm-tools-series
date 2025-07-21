@@ -222,6 +222,26 @@ let AgentsService = AgentsService_1 = class AgentsService {
     }
     async chatStream(userId, userMessage, res) {
         const eventSender = new streaming_service_1.FastifyStreamEventSender(res);
+        let timeoutId;
+        let hasStartedStreaming = false;
+        const setupTimeout = (duration) => {
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
+            timeoutId = setTimeout(() => {
+                const message = hasStartedStreaming
+                    ? 'Stream timeout - taking longer than expected'
+                    : 'Request timeout - no response received';
+                eventSender.sendEvent({ type: 'error', message });
+                eventSender.end();
+            }, duration);
+        };
+        setupTimeout(60000);
+        res.raw.on('close', () => {
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
+        });
         try {
             this.currentUserId = userId;
             const userToken = this.generateServiceToken(userId);
@@ -250,6 +270,8 @@ let AgentsService = AgentsService_1 = class AgentsService {
             ];
             const toolResponse = await this.callOpenRouter("moonshotai/kimi-k2", messages, this.tools);
             if (toolResponse?.choices?.[0]?.message?.tool_calls) {
+                hasStartedStreaming = true;
+                setupTimeout(120000);
                 const toolCall = toolResponse.choices[0].message.tool_calls[0];
                 await this.executeToolWithEvents(toolCall, eventSender);
                 const toolResult = await this.executeTool(toolCall);
@@ -260,19 +282,35 @@ let AgentsService = AgentsService_1 = class AgentsService {
                 });
             }
             else {
+                hasStartedStreaming = true;
+                setupTimeout(120000);
                 const finalContent = await this.streamFinalResponseDirect(userId, userMessage, eventSender);
                 await this.chatHistoryService.saveChatMessage(userId, {
                     role: "assistant",
                     content: finalContent
                 });
             }
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
         }
         catch (error) {
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
             this.logger.error("Stream chat error:", error);
-            eventSender.sendEvent({
-                type: 'error',
-                message: error.message || "An error occurred during streaming"
-            });
+            if (error.message && error.message.includes('cancelled')) {
+                eventSender.sendEvent({
+                    type: 'cancelled',
+                    message: 'Request was cancelled'
+                });
+            }
+            else {
+                eventSender.sendEvent({
+                    type: 'error',
+                    message: error.message || "An error occurred during streaming"
+                });
+            }
             eventSender.end();
         }
     }

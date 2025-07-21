@@ -295,6 +295,33 @@ export class AgentsService implements OnModuleInit {
    */
   async chatStream(userId: string, userMessage: string, res: FastifyReply): Promise<void> {
     const eventSender = new FastifyStreamEventSender(res);
+    let timeoutId: NodeJS.Timeout | undefined;
+    let hasStartedStreaming = false;
+
+    const setupTimeout = (duration: number) => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      timeoutId = setTimeout(() => {
+        const message = hasStartedStreaming 
+          ? 'Stream timeout - taking longer than expected'
+          : 'Request timeout - no response received';
+        
+        eventSender.sendEvent({ type: 'error', message });
+        eventSender.end();
+      }, duration);
+    };
+
+    // Initial timeout for connection/first response
+    setupTimeout(60000); // 60 seconds for initial response
+
+    // Check if client disconnected
+    res.raw.on('close', () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      // Cleanup any ongoing operations
+    });
     
     try {
       // Update current user ID and refresh tokens with user context
@@ -334,6 +361,10 @@ export class AgentsService implements OnModuleInit {
       const toolResponse = await this.callOpenRouter("moonshotai/kimi-k2", messages, this.tools);
       
       if (toolResponse?.choices?.[0]?.message?.tool_calls) {
+        hasStartedStreaming = true;
+        // Extend timeout once streaming starts
+        setupTimeout(120000); // 2 minutes for ongoing stream
+        
         // Execute tools first
         const toolCall = toolResponse.choices[0].message.tool_calls[0];
         await this.executeToolWithEvents(toolCall, eventSender);
@@ -350,6 +381,10 @@ export class AgentsService implements OnModuleInit {
           content: finalContent
         });
       } else {
+        hasStartedStreaming = true;
+        // Extend timeout once streaming starts
+        setupTimeout(120000); // 2 minutes for ongoing stream
+        
         // No tools needed, stream direct response
         const finalContent = await this.streamFinalResponseDirect(userId, userMessage, eventSender);
         
@@ -359,12 +394,28 @@ export class AgentsService implements OnModuleInit {
           content: finalContent
         });
       }
+      
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
     } catch (error) {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
       this.logger.error("Stream chat error:", error);
-      eventSender.sendEvent({
-        type: 'error',
-        message: error.message || "An error occurred during streaming"
-      });
+      
+      if (error.message && error.message.includes('cancelled')) {
+        // Handle cancellation gracefully
+        eventSender.sendEvent({
+          type: 'cancelled',
+          message: 'Request was cancelled'
+        });
+      } else {
+        eventSender.sendEvent({
+          type: 'error',
+          message: error.message || "An error occurred during streaming"
+        });
+      }
       eventSender.end();
     }
   }
