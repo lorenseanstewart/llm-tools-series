@@ -142,7 +142,8 @@ All API responses follow this structure:
 
 ```json
 {
-  "response": "AI assistant response text here...",
+  "success": true,
+  "message": "AI assistant response text here...",
   "timestamp": "2025-01-XX:XX:XX.XXXZ"
 }
 ```
