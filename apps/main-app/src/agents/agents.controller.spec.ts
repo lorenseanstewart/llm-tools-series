@@ -3,6 +3,7 @@ import { AgentsController } from './agents.controller';
 import { AgentsService } from './agents.service';
 import { ChatHistoryService } from './chat-history.service';
 import { ChatRequestDto } from './dto/chat-request.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 describe('AgentsController', () => {
   let controller: AgentsController;
@@ -32,7 +33,10 @@ describe('AgentsController', () => {
           useValue: mockChatHistoryService
         }
       ]
-    }).compile();
+    })
+    .overrideGuard(JwtAuthGuard)
+    .useValue({ canActivate: () => true })
+    .compile();
 
     controller = module.get<AgentsController>(AgentsController);
     agentsService = module.get<AgentsService>(AgentsService);
