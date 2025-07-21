@@ -1,6 +1,8 @@
 import { FastifyInstance } from 'fastify';
 import { MCPTool, MCPToolCallRequest, MCPToolCallResponse } from '@llm-tools/shared-types';
-import { getListingMetrics, getMarketAnalysis, generatePerformanceReport } from '../tools/analytics';
+import { getListingMetrics } from '../tools/get-listing-metrics';
+import { getMarketAnalysis } from '../tools/get-market-analysis';
+import { generatePerformanceReport } from '../tools/generate-performance-report';
 import { ANALYTICS_TOOLS } from '../config/tools-config';
 
 export async function toolsRoutes(fastify: FastifyInstance) {

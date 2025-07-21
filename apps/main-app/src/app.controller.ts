@@ -14,6 +14,18 @@ export class AppController {
     };
   }
 
+  @Get('/auth/login')
+  @Render("auth/login.eta")
+  async getLogin() {
+    return {};
+  }
+
+  @Get('/auth/signup')
+  @Render("auth/signup.eta")
+  async getSignup() {
+    return {};
+  }
+
   @Get('health')
   getHealth() {
     return {

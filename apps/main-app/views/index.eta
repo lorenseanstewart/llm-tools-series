@@ -1,105 +1,144 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= it.title %></title>
-    <link rel="stylesheet" href="/public/css/styles.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
+  <title><%= it.title %></title>
+  <link rel="stylesheet"
+      href="/public/css/styles.css">
+  <link rel="preconnect"
+      href="https://fonts.googleapis.com">
+  <link rel="preconnect"
+      href="https://fonts.gstatic.com"
+      crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet">
 </head>
+
 <body>
-    <div class="container">
-        <header class="header">
-            <h1><%= it.title %></h1>
-            <p class="subtitle"><%= it.subtitle %></p>
-            <div class="status-indicators">
-                <div class="status-indicator" id="main-status">
-                    <span class="status-dot pending"></span>
-                    <span>Main App</span>
-                </div>
-                <div class="status-indicator" id="listings-status">
-                    <span class="status-dot pending"></span>
-                    <span>Listings MCP</span>
-                </div>
-                <div class="status-indicator" id="analytics-status">
-                    <span class="status-dot pending"></span>
-                    <span>Analytics MCP</span>
-                </div>
-            </div>
-        </header>
-
-        <div class="chat-container">
-            <div class="chat-header">
-                <h2>Real Estate AI Assistant</h2>
-                <p>Ask me about properties, market analysis, or generate reports</p>
-            </div>
-            
-            <div id="messages" class="messages">
-                <div class="message assistant-message">
-                    <div class="message-avatar">🤖</div>
-                    <div class="message-content">
-                        <p>Welcome! I can help you find properties, analyze market data, and generate detailed reports.</p>
-                        <p><strong>Try asking:</strong></p>
-                        <ul>
-                            <li>"Find me 3-bedroom homes in Portland under $800,000"</li>
-                            <li>"Show me analytics for listing L001"</li>
-                            <li>"What's the market analysis for Seattle?"</li>
-                            <li>"Generate a performance report for recent listings"</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-            
-            <div id="status-area" class="status-area"></div>
-            
-            <div class="input-area">
-                <div class="input-group">
-                    <input 
-                        type="text" 
-                        id="message-input" 
-                        class="message-input" 
-                        placeholder="Ask about real estate..."
-                        maxlength="500"
-                        autocomplete="off"
-                    >
-                    <button id="send-button" class="send-button">
-                        <span class="button-text">Send</span>
-                        <span class="button-icon">➤</span>
-                    </button>
-                    <button id="cancel-button" class="cancel-button">
-                        Cancel
-                    </button>
-                </div>
-                <div id="typing-indicator" class="typing-indicator">
-                    <span>AI is thinking</span>
-                    <div class="typing-dots">
-                        <span></span>
-                        <span></span>
-                        <span></span>
-                    </div>
-                </div>
-            </div>
+  <div class="container">
+    <header class="header">
+      <div class="header-top">
+        <div class="header-content">
+          <h1><%= it.title %></h1>
+          <p class="subtitle"><%= it.subtitle %></p>
         </div>
+        <div class="user-menu">
+          <span id="user-display"
+              class="user-name">Loading...</span>
+          <button id="logout-button"
+              class="logout-button">Logout</button>
+        </div>
+      </div>
+      <div class="status-indicators">
+        <div class="status-indicator"
+            id="main-status">
+          <span class="status-dot pending"></span>
+          <span>Main App</span>
+        </div>
+        <div class="status-indicator"
+            id="listings-status">
+          <span class="status-dot pending"></span>
+          <span>Listings MCP</span>
+        </div>
+        <div class="status-indicator"
+            id="analytics-status">
+          <span class="status-dot pending"></span>
+          <span>Analytics MCP</span>
+        </div>
+      </div>
+    </header>
 
-        <footer class="footer">
-            <div class="footer-info">
-                <p>
-                    <strong>MCP Architecture:</strong> 
-                    This demo showcases microservices with Model Context Protocol (MCP) for scalable AI tool integration.
-                </p>
-                <div class="tech-stack">
-                    <span class="tech-badge">NestJS</span>
-                    <span class="tech-badge">Fastify</span>
-                    <span class="tech-badge">TypeScript</span>
-                    <span class="tech-badge">OpenRouter</span>
-                    <span class="tech-badge">MCP</span>
-                </div>
-            </div>
-        </footer>
+    <div class="chat-container">
+      <div class="chat-header">
+        <h2>Real Estate AI Assistant</h2>
+        <p>Ask me about properties, market analysis, or generate reports</p>
+      </div>
+
+      <div id="messages"
+          class="messages">
+        <div class="message assistant-message">
+          <div class="message-avatar">🤖</div>
+          <div class="message-content">
+            <p>Welcome! I can help you find properties, analyze market data, and generate detailed reports.</p>
+            <p><strong>Try asking:</strong></p>
+            <ul>
+              <li>"Find me 3-bedroom homes in Portland under $900,000"</li>
+              <li>"Show me analytics for listing L001"</li>
+              <li>"What's the market analysis for Seattle, WA?"</li>
+              <li>"Generate a performance report for listings L001, L002, and L003"</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div id="status-area"
+          class="status-area"></div>
+
+      <div class="input-area">
+        <div class="input-group">
+          <input type="text"
+              id="message-input"
+              class="message-input"
+              placeholder="Ask about real estate..."
+              maxlength="500"
+              autocomplete="off">
+          <button id="send-button"
+              class="send-button">
+            <span class="button-text">Send</span>
+            <span class="button-icon">➤</span>
+          </button>
+          <button id="cancel-button"
+              class="cancel-button">
+            Cancel
+          </button>
+        </div>
+        <div id="typing-indicator"
+            class="typing-indicator">
+          <span>AI is thinking</span>
+          <div class="typing-dots">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <script src="/public/js/chat.js"></script>
+    <footer class="footer">
+      <div class="footer-info">
+        <p>
+          <strong>MCP Architecture:</strong>
+          This demo showcases microservices with Model Context Protocol (MCP) for scalable AI tool integration.
+        </p>
+        <div class="tech-stack">
+          <span class="tech-badge">NestJS</span>
+          <span class="tech-badge">Fastify</span>
+          <span class="tech-badge">TypeScript</span>
+          <span class="tech-badge">OpenRouter</span>
+          <span class="tech-badge">MCP</span>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script src="/public/js/auth.js"></script>
+  <script src="/public/js/chat.js"></script>
+  <script>
+    // Add logout functionality
+    document.addEventListener('DOMContentLoaded', () => {
+      const logoutButton = document.getElementById('logout-button');
+      if (logoutButton) {
+        logoutButton.addEventListener('click', () => {
+          if (window.authManager) {
+            window.authManager.logout();
+          }
+        });
+      }
+    });
+  </script>
 </body>
+
 </html>

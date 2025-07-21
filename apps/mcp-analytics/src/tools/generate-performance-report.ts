@@ -1,5 +1,22 @@
-import { PerformanceReport, ListingMetrics } from '@llm-tools/shared-types';
+import { PerformanceReport, ListingMetrics, ListingWithMetrics, Listing } from '@llm-tools/shared-types';
 import { mockListingMetrics } from '../data/mock-analytics';
+import axios from 'axios';
+
+async function fetchListingData(listingIds: string[]): Promise<Listing[]> {
+  try {
+    const response = await axios.post('http://localhost:3001/tools/call', {
+      name: 'findListings',
+      arguments: {}
+    });
+    
+    const allListings = response.data.result;
+    return allListings.filter((listing: Listing) => listingIds.includes(listing.listingId));
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.warn('Failed to fetch listing data from listings server:', errorMessage);
+    return [];
+  }
+}
 
 export async function generatePerformanceReport(listingIds: string[]): Promise<PerformanceReport> {
   console.log('--- Calling generatePerformanceReport tool ---');
@@ -9,6 +26,9 @@ export async function generatePerformanceReport(listingIds: string[]): Promise<P
   const metrics = mockListingMetrics.filter(metric => 
     listingIds.includes(metric.listingId)
   );
+
+  // Fetch listing data from listings server
+  const listingData = await fetchListingData(listingIds);
 
   // Calculate summary statistics
   const totalViews = metrics.reduce((sum, m) => sum + m.pageViews, 0);
@@ -42,6 +62,29 @@ export async function generatePerformanceReport(listingIds: string[]): Promise<P
     recommendations.push('Increase marketing efforts to boost visibility');
   }
 
+  // Combine listing data with metrics
+  const listings: ListingWithMetrics[] = listingData.map((listing: Listing) => {
+    const listingMetrics = metrics.find(m => m.listingId === listing.listingId);
+    return {
+      listingId: listing.listingId,
+      address: listing.address,
+      price: listing.price,
+      bedrooms: listing.bedrooms,
+      bathrooms: listing.bathrooms,
+      status: listing.status,
+      metrics: listingMetrics || {
+        listingId: listing.listingId,
+        pageViews: 0,
+        saves: 0,
+        inquiries: 0,
+        timeOnMarket: 0,
+        clickThroughRate: 0,
+        conversionRate: 0,
+        lastUpdated: new Date().toISOString()
+      }
+    };
+  });
+
   const report: PerformanceReport = {
     reportId: `RPT-${Date.now()}`,
     listingIds,
@@ -53,6 +96,7 @@ export async function generatePerformanceReport(listingIds: string[]): Promise<P
       topPerformer: topPerformer.listingId,
       recommendations
     },
+    listings,
     metrics
   };
 

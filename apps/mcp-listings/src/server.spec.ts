@@ -1,13 +1,18 @@
 import { FastifyInstance } from 'fastify';
 import { build } from './app';
 import { LISTINGS_TOOLS } from './config/tools-config';
-import { findListings, sendListingReport } from './tools/listings';
 
-// Mock the tool functions
-jest.mock('./tools/listings', () => ({
-  findListings: jest.fn(),
+// Mock the specific tool files that are imported by the routes
+jest.mock('./tools/find-listings', () => ({
+  findListings: jest.fn()
+}));
+
+jest.mock('./tools/send-listing-report', () => ({
   sendListingReport: jest.fn()
 }));
+
+import { findListings } from './tools/find-listings';
+import { sendListingReport } from './tools/send-listing-report';
 
 describe('MCP Listings Server', () => {
   let app: FastifyInstance;

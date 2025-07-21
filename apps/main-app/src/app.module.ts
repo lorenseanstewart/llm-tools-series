@@ -4,6 +4,7 @@ import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 import { ToolsModule } from "./tools/tools.module";
 import { AgentsModule } from "./agents/agents.module";
+import { AuthModule } from "./auth/auth.module";
 import configuration from "./config/configuration";
 
 @Module({
@@ -13,7 +14,8 @@ import configuration from "./config/configuration";
       isGlobal: true,
     }),
     ToolsModule, 
-    AgentsModule
+    AgentsModule,
+    AuthModule
   ],
   controllers: [AppController],
   providers: [AppService],

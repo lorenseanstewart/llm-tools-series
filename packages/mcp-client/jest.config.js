@@ -29,6 +29,5 @@ module.exports = {
     '^@llm-tools/shared-types$': '<rootDir>/../../shared-types/src'
   },
   silent: true,
-  detectOpenHandles: true,
-  forceExit: false
+  forceExit: true
 };

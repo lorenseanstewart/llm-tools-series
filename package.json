@@ -22,7 +22,7 @@
     "start:main-app": "npm run start:prod -w apps/main-app",
     "start:mcp-listings": "npm run start -w apps/mcp-listings",
     "start:mcp-analytics": "npm run start -w apps/mcp-analytics",
-    "test": "npm run test --workspaces",
+    "test": "npm run test --workspaces -- --detectOpenHandles",
     "test:main-app": "npm run test -w apps/main-app",
     "test:mcp-listings": "npm run test -w apps/mcp-listings",
     "test:mcp-analytics": "npm run test -w apps/mcp-analytics",

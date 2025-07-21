@@ -16,7 +16,8 @@ module.exports = {
   moduleNameMapper: {
     '^@llm-tools/shared-types$': '<rootDir>/../../packages/shared-types/src'
   },
-  silent: true,
   detectOpenHandles: true,
-  forceExit: false
+  forceExit: false,
+  clearMocks: true,
+  restoreMocks: true
 };

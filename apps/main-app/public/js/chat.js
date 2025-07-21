@@ -2,6 +2,15 @@
 
 class ChatInterface {
   constructor() {
+    // Check authentication first
+    this.authManager = window.authManager || new AuthManager();
+    
+    // Redirect to login if not authenticated
+    if (!this.authManager.isAuthenticated()) {
+      window.location.href = '/auth/login';
+      return;
+    }
+
     this.messageContainer = document.getElementById('messages');
     this.statusArea = document.getElementById('status-area');
     this.messageInput = document.getElementById('message-input');
@@ -11,9 +20,11 @@ class ChatInterface {
     
     this.userId = 'user-' + Math.random().toString(36).substr(2, 9);
     this.isStreaming = false;
+    this.currentAbortController = null;
     
     this.setupEventListeners();
     this.checkServiceHealth();
+    this.loadUserInfo();
   }
 
   setupEventListeners() {
@@ -66,9 +77,28 @@ class ChatInterface {
     }
   }
 
+  loadUserInfo() {
+    const userInfo = this.authManager.getUserInfo();
+    if (userInfo) {
+      const userDisplay = document.getElementById('user-display');
+      if (userDisplay) {
+        userDisplay.textContent = userInfo.name || userInfo.email;
+      }
+    }
+  }
+
   async sendMessage() {
     const message = this.messageInput.value.trim();
     if (!message || this.isStreaming) return;
+    
+    const token = this.authManager.getToken();
+    if (!token) {
+      this.addAssistantMessage('Your session has expired. Please log in again.');
+      setTimeout(() => {
+        window.location.href = '/auth/login';
+      }, 2000);
+      return;
+    }
     
     // Add user message to chat
     this.addUserMessage(message);
@@ -78,17 +108,30 @@ class ChatInterface {
     this.setStreamingState(true);
     
     try {
-      // Send request to backend
+      // Create abort controller for cancellation
+      this.currentAbortController = new AbortController();
+      
+      // Send request to backend with auth token
       const response = await fetch('/agents/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           userId: this.userId,
           userMessage: message
-        })
+        }),
+        signal: this.currentAbortController.signal
       });
+
+      if (response.status === 401) {
+        this.addAssistantMessage('Your session has expired. Please log in again.');
+        setTimeout(() => {
+          this.authManager.logout();
+        }, 2000);
+        return;
+      }
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -98,10 +141,16 @@ class ChatInterface {
       this.addAssistantMessage(result.message || 'Sorry, I encountered an error processing your request.');
       
     } catch (error) {
-      console.error('Chat error:', error);
-      this.addAssistantMessage('Sorry, I encountered an error. Please make sure all services are running and try again.');
+      if (error.name === 'AbortError') {
+        // Request was cancelled - don't show error message
+        console.log('Request was cancelled');
+      } else {
+        console.error('Chat error:', error);
+        this.addAssistantMessage('Sorry, I encountered an error. Please make sure all services are running and try again.');
+      }
     } finally {
       this.setStreamingState(false);
+      this.currentAbortController = null;
     }
   }
 
@@ -201,7 +250,10 @@ class ChatInterface {
   }
 
   cancelRequest() {
-    // Placeholder for cancellation logic
+    if (this.currentAbortController) {
+      this.currentAbortController.abort();
+      this.currentAbortController = null;
+    }
     this.setStreamingState(false);
     this.updateStatus('Request cancelled', 'status-message');
   }

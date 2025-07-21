@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { MCPTool, MCPToolCallRequest, MCPToolCallResponse } from '@llm-tools/shared-types';
-import { findListings, sendListingReport } from '../tools/listings';
+import { findListings } from '../tools/find-listings';
+import { sendListingReport } from '../tools/send-listing-report';
 import { LISTINGS_TOOLS } from '../config/tools-config';
 
 export async function toolsRoutes(fastify: FastifyInstance) {

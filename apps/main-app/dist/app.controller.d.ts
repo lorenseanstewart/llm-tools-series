@@ -6,6 +6,8 @@ export declare class AppController {
         title: string;
         subtitle: string;
     }>;
+    getLogin(): Promise<{}>;
+    getSignup(): Promise<{}>;
     getHealth(): {
         status: string;
         timestamp: string;

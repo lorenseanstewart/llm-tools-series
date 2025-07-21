@@ -33,6 +33,24 @@ export interface MarketAnalysis {
 }
 
 /**
+ * Enhanced listing data with both property and analytics information
+ */
+export interface ListingWithMetrics {
+  listingId: string;
+  address: {
+    street: string;
+    city: string;
+    state: string;
+    zip: string;
+  };
+  price: number;
+  bedrooms: number;
+  bathrooms: number;
+  status: string;
+  metrics: ListingMetrics;
+}
+
+/**
  * Performance report for listings
  */
 export interface PerformanceReport {
@@ -46,5 +64,6 @@ export interface PerformanceReport {
     topPerformer: string;
     recommendations: string[];
   };
+  listings: ListingWithMetrics[];
   metrics: ListingMetrics[];
 }

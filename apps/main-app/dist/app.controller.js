@@ -23,6 +23,12 @@ let AppController = class AppController {
             subtitle: 'Part 2: MCP Microservices Implementation'
         };
     }
+    async getLogin() {
+        return {};
+    }
+    async getSignup() {
+        return {};
+    }
     getHealth() {
         return {
             status: 'ok',
@@ -39,6 +45,20 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], AppController.prototype, "getHome", null);
+__decorate([
+    (0, common_1.Get)('/auth/login'),
+    (0, common_1.Render)("auth/login.eta"),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], AppController.prototype, "getLogin", null);
+__decorate([
+    (0, common_1.Get)('/auth/signup'),
+    (0, common_1.Render)("auth/signup.eta"),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], AppController.prototype, "getSignup", null);
 __decorate([
     (0, common_1.Get)('health'),
     __metadata("design:type", Function),

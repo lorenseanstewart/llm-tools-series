@@ -4,14 +4,14 @@ exports.ANALYTICS_TOOLS = void 0;
 exports.ANALYTICS_TOOLS = [
     {
         name: 'getListingMetrics',
-        description: 'Get analytics data for specific listings (views, saves, inquiries). IMPORTANT: Use listing IDs returned from findListings tool (e.g., L001, L002, etc.), not generated IDs.',
+        description: 'Get analytics data for specific listings (views, saves, inquiries)',
         inputSchema: {
             type: 'object',
             properties: {
                 listingIds: {
                     type: 'array',
                     items: { type: 'string' },
-                    description: 'Array of listing IDs from findListings results (format: L001, L002, etc.)'
+                    description: 'Array of listing IDs to get metrics for'
                 }
             },
             required: ['listingIds']
@@ -33,14 +33,14 @@ exports.ANALYTICS_TOOLS = [
     },
     {
         name: 'generatePerformanceReport',
-        description: 'Generate performance metrics report for listings. IMPORTANT: Use listing IDs returned from findListings tool (e.g., L001, L002, etc.), not generated IDs.',
+        description: 'Generate performance metrics report for listings',
         inputSchema: {
             type: 'object',
             properties: {
                 listingIds: {
                     type: 'array',
                     items: { type: 'string' },
-                    description: 'Array of listing IDs from findListings results (format: L001, L002, etc.)'
+                    description: 'Array of listing IDs to include in performance report'
                 }
             },
             required: ['listingIds']

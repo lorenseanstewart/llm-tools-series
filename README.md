@@ -6,20 +6,9 @@ A production-ready AI real estate agent built with **microservices architecture*
 > 
 > This README describes the **Part 2** implementation featuring a complete MCP-based microservices architecture. The code includes a main NestJS application with two specialized MCP servers for listings and analytics.
 
-## What's in Part 2: MCP Scaling Implementation
+## Part 2: MCP Scaling Implementation
 
-This branch demonstrates **scaling from a monolithic LLM tool integration to a distributed microservices architecture** using the Model Context Protocol (MCP). We've transformed the simple chatbot from Part 1 into a production-ready system with:
-
-### Key Improvements from Part 1
-- **🔄 Microservices Architecture**: Split tools into independent MCP servers
-- **📡 Protocol Standardization**: Implemented MCP for tool discovery and execution  
-- **🎯 Service Specialization**: Dedicated servers for listings and analytics
-- **🚀 Horizontal Scaling**: Each service can scale independently
-- **💻 Production Frontend**: Beautiful chat interface with real-time service monitoring
-- **🧪 Comprehensive Testing**: 60+ tests across all services
-- **📊 Enhanced Analytics**: Cross-service data aggregation for performance reports
-
-### Architecture Transformation
+This branch showcases **scaling LLM agents with the Model Context Protocol**, transforming a monolithic tool integration into a distributed microservices architecture. The implementation includes:
 
 - **🏗️ Microservices Architecture**: Three separate services with clear responsibilities
 - **🔧 MCP Protocol Implementation**: Standardized tool discovery and execution
@@ -136,7 +125,7 @@ HTTP client library for MCP communication:
 
 ## Frontend Chat Interface
 
-The main application includes a responsive chat interface built with modern web technologies:
+The main application includes a beautiful, responsive chat interface built with modern web technologies:
 
 ### Features
 - **Real-time Service Status**: Visual indicators showing health of all MCP servers
@@ -155,7 +144,7 @@ The main application includes a responsive chat interface built with modern web 
 
 ### Sample Interactions
 Try these example queries in the chat interface:
-- "Find me 3-bedroom homes in Portland under $800,000"
+- "Find me 3-bedroom homes in Portland under $900,000"
 - "Show me analytics for listing L001"
 - "What's the market analysis for Seattle, WA?"
 - "Generate a performance report for listings L001, L002, and L003"
@@ -246,10 +235,8 @@ This starts:
 - **MCP Listings server**: http://localhost:3001  
 - **MCP Analytics server**: http://localhost:3002
 
-**⚠️ Important:** Make sure to start from the project root directory (`llm-tools/`) and ensure all three services start successfully. You should see green status indicators in the terminal.
-
 4. **Open the chat interface:**
-Visit http://localhost:3000 in your browser to use the interactive chat interface! The status indicators at the top will show green when all services are healthy.
+Visit http://localhost:3000 in your browser to use the interactive chat interface!
 
 ### Detailed Setup
 
@@ -274,18 +261,29 @@ MCP_ANALYTICS_URL=http://localhost:3002
 npm run dev
 
 # Start services individually (for debugging):
-# Terminal 1:
-cd apps/mcp-listings && npm run start:dev
-
-# Terminal 2:
-cd apps/mcp-analytics && npm run start:dev
-
-# Terminal 3:
-cd apps/main-app && npm run start:dev
+npm run dev:main-app      # Main app on port 3000
+npm run dev:mcp-listings  # Listings server on port 3001
+npm run dev:mcp-analytics # Analytics server on port 3002
 
 # Production mode:
 npm run build             # Build all services
 npm run start            # Start all services in production mode
+```
+
+#### Development Commands
+
+When working in individual app directories:
+
+```bash
+# From apps/main-app/ directory:
+npm run start:dev         # Development server with auto-reload
+npm run start             # Production mode
+npm run build             # Build the application
+npm run test              # Run tests
+
+# From project root:
+npm run dev:main-app      # Start main app in dev mode
+npm run dev               # Start all services
 ```
 
 #### Easy Startup Script
@@ -317,7 +315,10 @@ npm run test -w apps/mcp-analytics
 Once all services are running, test the system:
 
 ```bash
-# Check manually:
+# Quick health check of all services
+./scripts/health-check.sh
+
+# Or check manually:
 curl http://localhost:3000        # Main app
 curl http://localhost:3001/health # MCP Listings server  
 curl http://localhost:3002/health # MCP Analytics server
@@ -327,32 +328,6 @@ curl -X POST http://localhost:3000/agents/chat \
   -H "Content-Type: application/json" \
   -d '{"userId": "test-user", "userMessage": "Find me homes in Portland"}'
 ```
-
-### Troubleshooting
-
-**Port Already in Use Error (EADDRINUSE)**
-```bash
-# If you see "port 3000 already in use", either:
-# 1. Stop other processes using those ports, or
-# 2. Use individual service startup commands instead of npm run dev
-```
-
-**Services Not Starting**
-```bash
-# Make sure you're in the project root directory
-pwd  # Should show: /path/to/llm-tools
-
-# Ensure all dependencies are installed
-npm install
-
-# Check if all packages built successfully
-npm run build
-```
-
-**OpenRouter API Errors**
-- Verify your API key is set in `apps/main-app/.env`
-- Check your OpenRouter account has credits
-- Ensure the API key has the correct permissions
 
 ## API Usage
 
