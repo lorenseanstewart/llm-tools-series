@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { build } from './app';
 import { LISTINGS_TOOLS } from './config/tools-config';
+import jwt from 'jsonwebtoken';
 
 // Mock the specific tool files that are imported by the routes
 jest.mock('./tools/find-listings', () => ({
@@ -18,6 +19,7 @@ describe('MCP Listings Server', () => {
   let app: FastifyInstance;
 
   beforeAll(async () => {
+    process.env.JWT_SECRET = 'test-secret';
     app = build({ logger: false });
     await app.ready();
   });
@@ -30,11 +32,54 @@ describe('MCP Listings Server', () => {
     jest.clearAllMocks();
   });
 
-  describe('GET /tools', () => {
-    it('should return the list of available tools', async () => {
+  describe('Authentication', () => {
+    it('should reject requests without auth token', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/tools/call',
+        payload: { name: 'findListings', arguments: {} }
+      });
+
+      expect(response.statusCode).toBe(401);
+      const body = JSON.parse(response.body);
+      expect(body.error).toBe('Access token required');
+    });
+
+    it('should reject requests with invalid token', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/tools/call',
+        headers: {
+          'Authorization': 'Bearer invalid-token'
+        },
+        payload: { name: 'findListings', arguments: {} }
+      });
+
+      expect(response.statusCode).toBe(403);
+      const body = JSON.parse(response.body);
+      expect(body.error).toBe('Invalid or expired token');
+    });
+
+    it('should reject GET /tools without auth token', async () => {
       const response = await app.inject({
         method: 'GET',
         url: '/tools'
+      });
+
+      expect(response.statusCode).toBe(401);
+    });
+  });
+
+  describe('GET /tools', () => {
+    it('should return the list of available tools with valid token', async () => {
+      const token = jwt.sign({ serviceId: 'main-app' }, 'test-secret');
+      
+      const response = await app.inject({
+        method: 'GET',
+        url: '/tools',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
 
       expect(response.statusCode).toBe(200);
@@ -44,6 +89,7 @@ describe('MCP Listings Server', () => {
 
   describe('POST /tools/call', () => {
     it('should execute findListings tool successfully', async () => {
+      const token = jwt.sign({ serviceId: 'main-app' }, 'test-secret');
       const mockListings = [
         {
           listingId: '123',
@@ -65,6 +111,9 @@ describe('MCP Listings Server', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/tools/call',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
         payload: {
           name: 'findListings',
           arguments: { city: 'Portland', maxPrice: 600000 }
@@ -77,12 +126,16 @@ describe('MCP Listings Server', () => {
     });
 
     it('should execute sendListingReport tool successfully', async () => {
+      const token = jwt.sign({ serviceId: 'main-app' }, 'test-secret');
       const mockResult = { success: true, message: 'Report with 2 listings sent to test@example.com' };
       (sendListingReport as jest.Mock).mockResolvedValueOnce(mockResult);
 
       const response = await app.inject({
         method: 'POST',
         url: '/tools/call',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
         payload: {
           name: 'sendListingReport',
           arguments: {
@@ -98,9 +151,14 @@ describe('MCP Listings Server', () => {
     });
 
     it('should return 400 for unknown tool', async () => {
+      const token = jwt.sign({ serviceId: 'main-app' }, 'test-secret');
+      
       const response = await app.inject({
         method: 'POST',
         url: '/tools/call',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
         payload: {
           name: 'unknownTool',
           arguments: {}
@@ -112,11 +170,15 @@ describe('MCP Listings Server', () => {
     });
 
     it('should return 500 when tool execution fails', async () => {
+      const token = jwt.sign({ serviceId: 'main-app' }, 'test-secret');
       (findListings as jest.Mock).mockRejectedValueOnce(new Error('Database error'));
 
       const response = await app.inject({
         method: 'POST',
         url: '/tools/call',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
         payload: {
           name: 'findListings',
           arguments: { city: 'Portland' }

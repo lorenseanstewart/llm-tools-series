@@ -5,14 +5,17 @@ export interface MCPClientOptions {
   baseURL: string;
   timeout?: number;
   retries?: number;
+  authToken?: string;
 }
 
 export class MCPClient {
   private readonly http: AxiosInstance;
   private readonly retries: number;
+  private authToken?: string;
 
   constructor(options: MCPClientOptions) {
     this.retries = options.retries || 3;
+    this.authToken = options.authToken;
     this.http = axios.create({
       baseURL: options.baseURL,
       timeout: options.timeout || 10000,
@@ -20,6 +23,21 @@ export class MCPClient {
         'Content-Type': 'application/json',
       },
     });
+
+    // Add request interceptor to add auth header
+    this.http.interceptors.request.use((config) => {
+      if (this.authToken) {
+        config.headers.Authorization = `Bearer ${this.authToken}`;
+      }
+      return config;
+    });
+  }
+
+  /**
+   * Set or update the authentication token
+   */
+  setAuthToken(token: string) {
+    this.authToken = token;
   }
 
   /**

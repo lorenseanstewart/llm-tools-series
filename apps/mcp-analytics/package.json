@@ -16,8 +16,10 @@
   "dependencies": {
     "@fastify/cors": "^8.4.0",
     "@llm-tools/shared-types": "^0.0.1",
+    "@types/jsonwebtoken": "^9.0.10",
     "axios": "^1.10.0",
-    "fastify": "^4.24.3"
+    "fastify": "^4.24.3",
+    "jsonwebtoken": "^9.0.2"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",
