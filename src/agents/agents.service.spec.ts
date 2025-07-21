@@ -163,6 +163,10 @@ describe("AgentsService", () => {
             {
               role: "user",
               content: expect.stringContaining("Find active listings in Portland, OR with at least 3 bedrooms and under $850,000")
+            },
+            {
+              role: "user",
+              content: expect.stringContaining("Tool result: I found 2 properties that match your criteria:")
             }
           ]
         },
