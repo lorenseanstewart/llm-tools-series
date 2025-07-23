@@ -1,10 +1,10 @@
-# LLM Tools Real Estate Agent
+# LLM Tools Real Estate Agent - Part 2: MCP Scaling
 
 A production-ready AI real estate agent built with **microservices architecture** using the **Model Context Protocol (MCP)**. This implementation demonstrates how to scale LLM agents from simple chatbots to enterprise-ready systems with decoupled tool services.
 
-> **📍 Current Branch: `2-llm-tools-mcp` - MCP Microservices Implementation**
+> **📍 Current Branch: `part-2-mcp-scaling`**
 > 
-> This README describes the **Part 2** implementation featuring a complete MCP-based microservices architecture. The code includes a main NestJS application with two specialized MCP servers for listings and analytics.
+> This is Part 2 of a 4-part series showing the evolution from a simple chatbot to a production-ready AI agent system. This part demonstrates scaling with MCP microservices architecture and includes a **frontend UI at localhost:3000**.
 
 ## What's in Part 2: MCP Scaling Implementation
 
@@ -15,7 +15,7 @@ This branch demonstrates **scaling from a monolithic LLM tool integration to a d
 - **📡 Protocol Standardization**: Implemented MCP for tool discovery and execution  
 - **🎯 Service Specialization**: Dedicated servers for listings and analytics
 - **🚀 Horizontal Scaling**: Each service can scale independently
-- **💻 Production Frontend**: Beautiful chat interface with real-time service monitoring
+- **💻 Production Frontend**: Chat interface with real-time service monitoring
 - **🧪 Comprehensive Testing**: 60+ tests across all services
 - **📊 Enhanced Analytics**: Cross-service data aggregation for performance reports
 
@@ -27,7 +27,7 @@ This branch demonstrates **scaling from a monolithic LLM tool integration to a d
 - **🏠 Specialized Tools**: Listings search, reporting, and market data
 - **🧪 Production Testing**: Comprehensive test suite with 70+ tests
 - **⚡ High Performance**: Fastify-based servers with TypeScript type safety
-- **💬 Interactive Frontend**: Beautiful chat interface with real-time status indicators
+- **💬 Interactive Frontend**: Chat interface with real-time status indicators
 
 ## Architecture
 
@@ -221,10 +221,11 @@ The project uses realistic mock data to avoid external dependencies:
 
 ### Quick Setup
 
-1. **Clone and install dependencies:**
+1. **Clone and checkout part-2:**
 ```bash
 git clone <repository-url>
-cd llm-tools
+cd llm-tools-series
+git checkout part-2-mcp-scaling
 npm install
 ```
 
@@ -551,6 +552,16 @@ curl -X POST http://localhost:3002/tools/call \
 - **Prompt Optimization**: A/B testing for tool descriptions
 - **Tool Recommendation**: ML-based tool suggestion based on query patterns
 - **Conversation Memory**: Redis-based conversation state management
+
+## Next Steps
+
+Ready for more features? Check out the other parts in this series:
+
+- **Part 1**: `part-1-chatbot-to-agent` - Foundation with direct tool integration
+- **Part 3**: `part-3-mcp-security` - Add authentication and security
+- **Part 4**: `part-4-sse` - Real-time streaming with Server-Sent Events
+
+Each part builds on the previous one, adding production-ready features while maintaining the core agent functionality.
 
 ## Contributing
 
