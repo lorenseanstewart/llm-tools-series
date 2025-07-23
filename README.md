@@ -1,6 +1,10 @@
-# LLM Tools Real Estate Agent
+# LLM Tools Real Estate Agent - Part 1: Chatbot to Agent
 
 A TypeScript-powered real estate agent AI system built with NestJS, featuring intelligent property search and automated report generation.
+
+> **📍 Current Branch: `part-1-chatbot-to-agent`**
+> 
+> This is Part 1 of a 4-part series showing the evolution from a simple chatbot to a production-ready AI agent system. This part demonstrates direct tool integration patterns with a **REST API only (no UI)**.
 
 ## Overview
 
@@ -13,6 +17,7 @@ A demonstration AI real estate agent showcasing direct tool integration patterns
 - **Type Safety**: Single source of truth between TypeScript interfaces and LLM schemas
 - **Mock Data**: 20 realistic property listings for demonstration purposes
 - **Comprehensive Testing**: 100+ tests with 68% coverage using Jest and SWC
+- **API Only**: No frontend UI - interact via curl or API client
 
 ### Available Tools
 
@@ -30,7 +35,12 @@ A demonstration AI real estate agent showcasing direct tool integration patterns
 ### Installation
 
 ```bash
-# Clone and install dependencies
+# Clone and checkout part-1
+git clone <repository-url>
+cd llm-tools-series
+git checkout part-1-chatbot-to-agent
+
+# Install dependencies
 npm install
 
 # Create environment file
@@ -51,6 +61,8 @@ PORT=3000
 
 ```bash
 # Start in development mode (with auto-reload)
+npm run dev
+# or
 npm run start:dev
 
 # Run tests
@@ -67,16 +79,18 @@ npm run lint
 npm run format
 ```
 
-The application will start on `http://localhost:3000`.
+The API server will start on `http://localhost:3000`.
 
 ## API Testing with curl
+
+**Note**: This part has no frontend UI. All interactions are done via the REST API using curl or your preferred API client.
 
 ### Basic Chat Request
 
 ```bash
 curl -X POST http://localhost:3000/agents/chat \
   -H "Content-Type: application/json" \
-  -d '{"userMessage": "Hello, I am looking for a 3 bedroom house in Portland under 800k"}'
+  -d '{"userId": "test-user", "userMessage": "Hello, I am looking for a 3 bedroom house in Portland under 800k"}'
 ```
 
 ### General Conversation
@@ -84,7 +98,7 @@ curl -X POST http://localhost:3000/agents/chat \
 ```bash
 curl -X POST http://localhost:3000/agents/chat \
   -H "Content-Type: application/json" \
-  -d '{"userMessage": "What can you help me with?"}'
+  -d '{"userId": "test-user", "userMessage": "What can you help me with?"}'
 ```
 
 ### Property Search Examples
@@ -93,21 +107,21 @@ curl -X POST http://localhost:3000/agents/chat \
 ```bash
 curl -X POST http://localhost:3000/agents/chat \
   -H "Content-Type: application/json" \
-  -d '{"userMessage": "Show me homes in Seattle under 700k"}'
+  -d '{"userId": "test-user", "userMessage": "Show me homes in Seattle under 700k"}'
 ```
 
 **Search by bedrooms and status:**
 ```bash
 curl -X POST http://localhost:3000/agents/chat \
   -H "Content-Type: application/json" \
-  -d '{"userMessage": "I need a 4 bedroom active listing"}'
+  -d '{"userId": "test-user", "userMessage": "I need a 4 bedroom active listing"}'
 ```
 
 **Specific city search:**
 ```bash
 curl -X POST http://localhost:3000/agents/chat \
   -H "Content-Type: application/json" \
-  -d '{"userMessage": "Find properties in Bellevue, WA"}'
+  -d '{"userId": "test-user", "userMessage": "Find properties in Bellevue, WA"}'
 ```
 
 ### Report Generation (Simulated)
@@ -116,14 +130,14 @@ curl -X POST http://localhost:3000/agents/chat \
 ```bash
 curl -X POST http://localhost:3000/agents/chat \
   -H "Content-Type: application/json" \
-  -d '{"userMessage": "Send me a detailed report about houses in Portland under 600k"}'
+  -d '{"userId": "test-user", "userMessage": "Send me a detailed report about houses in Portland under 600k"}'
 ```
 
 **Market analysis request:**
 ```bash
 curl -X POST http://localhost:3000/agents/chat \
   -H "Content-Type: application/json" \
-  -d '{"userMessage": "Generate a market report for 2-3 bedroom homes in Oregon"}'
+  -d '{"userId": "test-user", "userMessage": "Generate a market report for 2-3 bedroom homes in Oregon"}'
 ```
 
 *Note: Reports are simulated for demonstration purposes. No actual reports are generated or emails sent.*
@@ -133,7 +147,7 @@ curl -X POST http://localhost:3000/agents/chat \
 ```bash
 curl -X POST http://localhost:3000/agents/chat \
   -H "Content-Type: application/json" \
-  -d '{"userMessage": "I want a 3 bedroom house in Washington state, preferably pending or sold, under 900k"}'
+  -d '{"userId": "test-user", "userMessage": "I want a 3 bedroom house in Washington state, preferably pending or sold, under 900k"}'
 ```
 
 ### Expected Response Format
@@ -215,6 +229,15 @@ The test suite includes:
 - LLM integration flow testing
 - Configuration and validation testing
 
+## Next Steps
+
+Ready for more features? Check out the other parts in this series:
+
+- **Part 2**: `part-2-mcp-scaling` - Scale with microservices and MCP
+- **Part 3**: `part-3-mcp-security` - Add authentication and security
+- **Part 4**: `part-4-sse` - Real-time streaming with Server-Sent Events
+
+Each part builds on the previous one, adding production-ready features while maintaining the core agent functionality.
 
 ## License
 
