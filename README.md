@@ -87,7 +87,7 @@ Scale your agent using the Model Context Protocol (MCP) with microservices archi
 - **Microservices Architecture**: Three separate services with clear boundaries
 - **MCP Implementation**: Standardized tool discovery and execution protocol
 - **Service Independence**: Each MCP server can be developed and deployed separately
-- **Frontend UI**: Beautiful chat interface with service health monitoring
+- **Frontend UI**: Chat interface with service health monitoring
 
 #### Services:
 1. **Main App** (Port 3000): NestJS orchestration and UI
