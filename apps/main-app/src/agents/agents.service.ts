@@ -152,7 +152,17 @@ export class AgentsService implements OnModuleInit {
         return assistantResponse;
       }
     } catch (error) {
-      this.logger.error("Chat error:", error);
+      // Log only the error message, not the entire error object
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Chat error: ${errorMessage}`);
+      
+      // Return user-friendly error message
+      if (errorMessage.includes('OpenRouter API key not configured')) {
+        return "The OpenRouter API key is not configured. Please add your API key to the .env file.";
+      } else if (errorMessage.includes('OpenRouter authentication failed')) {
+        return "Authentication with OpenRouter failed. Please check your API key.";
+      }
+      
       return "Sorry, I encountered an error. Please try again.";
     }
   }
@@ -162,6 +172,13 @@ export class AgentsService implements OnModuleInit {
     messages: OpenRouterMessage[], 
     tools?: Tool[]
   ): Promise<OpenRouterResponse> {
+    const apiKey = this.configService.get<string>("OPENROUTER_API_KEY");
+    
+    // Check if API key is configured
+    if (!apiKey || apiKey === 'your_openrouter_api_key_here') {
+      throw new Error('OpenRouter API key not configured. Please set OPENROUTER_API_KEY in your .env file');
+    }
+    
     const body: Record<string, any> = {
       model,
       messages
@@ -172,16 +189,26 @@ export class AgentsService implements OnModuleInit {
       body.tool_choice = "auto";
     }
 
-    const response = await axios.post(this.openrouterUrl, body, {
-      headers: {
-        "Authorization": `Bearer ${this.configService.get<string>("OPENROUTER_API_KEY")}`,
-        "HTTP-Referer": this.configService.get<string>("SITE_URL") || "http://localhost:3000",
-        "X-Title": "Real Estate AI Agent",
-        "Content-Type": "application/json"
-      }
-    });
+    try {
+      const response = await axios.post(this.openrouterUrl, body, {
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "HTTP-Referer": this.configService.get<string>("SITE_URL") || "http://localhost:3000",
+          "X-Title": "Real Estate AI Agent",
+          "Content-Type": "application/json"
+        }
+      });
 
-    return response.data;
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 401) {
+        throw new Error('OpenRouter authentication failed. Please check your API key.');
+      } else if (error.response) {
+        throw new Error(`OpenRouter API error: ${error.response.status} - ${error.response.data?.error?.message || error.response.statusText}`);
+      } else {
+        throw new Error(`Failed to connect to OpenRouter: ${error.message}`);
+      }
+    }
   }
 
   private async executeTool(toolCall: ToolCall): Promise<any> {

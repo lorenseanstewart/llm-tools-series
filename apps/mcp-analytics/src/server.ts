@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { build } from './app';
 
 const server = build({
