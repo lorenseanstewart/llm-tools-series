@@ -17,6 +17,7 @@
     "@fastify/cors": "^8.4.0",
     "@llm-tools/shared-types": "^0.0.1",
     "@types/jsonwebtoken": "^9.0.10",
+    "dotenv": "^17.2.1",
     "fastify": "^4.24.3",
     "jsonwebtoken": "^9.0.2"
   },

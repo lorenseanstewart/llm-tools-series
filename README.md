@@ -82,19 +82,25 @@ The chat interface provides a smooth, real-time experience:
 
 ### Quick Setup
 
-1. **Clone and checkout part-4:**
+1. **Clone the repository:**
 ```bash
-git clone <repository-url>
+git clone git@github.com:lorenseanstewart/llm-tools-series.git
 cd llm-tools-series
-git checkout part-4-sse
-npm install
+npm run install-all  # Installs dependencies for all workspaces
 ```
+> **Note:** The default branch is `part-4-sse` which contains the complete project with Server-Sent Events implementation.
 
 2. **Setup environment:**
 ```bash
 npm run setup
-# Edit apps/main-app/.env with your OpenRouter API key
 ```
+
+**Important: You need to configure THREE .env files with matching JWT_SECRET:**
+- `apps/main-app/.env` - Set your OpenRouter API key and JWT_SECRET
+- `apps/mcp-listings/.env` - Add the same JWT_SECRET
+- `apps/mcp-analytics/.env` - Add the same JWT_SECRET
+
+The JWT_SECRET must be identical across all services for authentication to work.
 
 3. **Start all services:**
 ```bash

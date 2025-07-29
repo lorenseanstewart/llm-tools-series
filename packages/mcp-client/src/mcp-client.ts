@@ -47,8 +47,18 @@ export class MCPClient {
     try {
       const response = await this.http.get<MCPTool[]>('/tools');
       return response.data;
-    } catch (error) {
-      throw new Error(`Failed to discover tools: ${error instanceof Error ? error.message : String(error)}`);
+    } catch (error: any) {
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        throw new Error(`Failed to discover tools: ${error.response.status} ${error.response.statusText} - ${error.response.data?.error || 'Unknown error'}`);
+      } else if (error.request) {
+        // The request was made but no response was received
+        throw new Error(`Failed to discover tools: No response from server`);
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        throw new Error(`Failed to discover tools: ${error.message}`);
+      }
     }
   }
 
@@ -59,8 +69,14 @@ export class MCPClient {
     try {
       const response = await this.http.get<MCPServerInfo>('/info');
       return response.data;
-    } catch (error) {
-      throw new Error(`Failed to get server info: ${error instanceof Error ? error.message : String(error)}`);
+    } catch (error: any) {
+      if (error.response) {
+        throw new Error(`Failed to get server info: ${error.response.status} ${error.response.statusText}`);
+      } else if (error.request) {
+        throw new Error(`Failed to get server info: No response from server`);
+      } else {
+        throw new Error(`Failed to get server info: ${error.message}`);
+      }
     }
   }
 
@@ -75,7 +91,13 @@ export class MCPClient {
         const response = await this.http.post<MCPToolCallResponse>('/tools/call', request);
         return response.data;
       } catch (error) {
-        lastError = error instanceof Error ? error : new Error(String(error));
+        if ((error as any).response) {
+          lastError = new Error(`${(error as any).response.status} ${(error as any).response.statusText}`);
+        } else if ((error as any).request) {
+          lastError = new Error('No response from server');
+        } else {
+          lastError = error instanceof Error ? error : new Error(String(error));
+        }
         
         if (attempt === this.retries) {
           break;

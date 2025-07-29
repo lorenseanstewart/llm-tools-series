@@ -11,6 +11,7 @@
   ],
   "scripts": {
     "setup": "chmod +x scripts/setup-env.sh && scripts/setup-env.sh",
+    "install-all": "npm install && npm install -w apps/main-app && npm install -w apps/mcp-listings && npm install -w apps/mcp-analytics && npm install -w packages/shared-types && npm install -w packages/mcp-client",
     "build": "npm run build:packages && npm run build:apps",
     "build:packages": "npm run build -w packages/shared-types && npm run build -w packages/mcp-client",
     "build:apps": "npm run build -w apps/main-app && npm run build -w apps/mcp-listings && npm run build -w apps/mcp-analytics",

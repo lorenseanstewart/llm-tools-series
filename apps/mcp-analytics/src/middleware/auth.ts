@@ -18,7 +18,8 @@ export async function authenticateToken(
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as any;
+    const jwtSecret = process.env.JWT_SECRET || 'your-secret-key';
+    const decoded = jwt.verify(token, jwtSecret) as any;
     
     // For service-to-service communication, you might have serviceId instead of userId
     request.userId = decoded.userId || decoded.sub;

@@ -127,11 +127,22 @@ let AgentsService = AgentsService_1 = class AgentsService {
             }
         }
         catch (error) {
-            this.logger.error("Chat error:", error);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            this.logger.error(`Chat error: ${errorMessage}`);
+            if (errorMessage.includes('OpenRouter API key not configured')) {
+                return "The OpenRouter API key is not configured. Please add your API key to the .env file.";
+            }
+            else if (errorMessage.includes('OpenRouter authentication failed')) {
+                return "Authentication with OpenRouter failed. Please check your API key.";
+            }
             return "Sorry, I encountered an error. Please try again.";
         }
     }
     async callOpenRouter(model, messages, tools) {
+        const apiKey = this.configService.get("OPENROUTER_API_KEY");
+        if (!apiKey || apiKey === 'your_openrouter_api_key_here') {
+            throw new Error('OpenRouter API key not configured. Please set OPENROUTER_API_KEY in your .env file');
+        }
         const body = {
             model,
             messages
@@ -140,15 +151,28 @@ let AgentsService = AgentsService_1 = class AgentsService {
             body.tools = tools;
             body.tool_choice = "auto";
         }
-        const response = await axios_1.default.post(this.openrouterUrl, body, {
-            headers: {
-                "Authorization": `Bearer ${this.configService.get("OPENROUTER_API_KEY")}`,
-                "HTTP-Referer": this.configService.get("SITE_URL") || "http://localhost:3000",
-                "X-Title": "Real Estate AI Agent",
-                "Content-Type": "application/json"
+        try {
+            const response = await axios_1.default.post(this.openrouterUrl, body, {
+                headers: {
+                    "Authorization": `Bearer ${apiKey}`,
+                    "HTTP-Referer": this.configService.get("SITE_URL") || "http://localhost:3000",
+                    "X-Title": "Real Estate AI Agent",
+                    "Content-Type": "application/json"
+                }
+            });
+            return response.data;
+        }
+        catch (error) {
+            if (error.response?.status === 401) {
+                throw new Error('OpenRouter authentication failed. Please check your API key.');
             }
-        });
-        return response.data;
+            else if (error.response) {
+                throw new Error(`OpenRouter API error: ${error.response.status} - ${error.response.data?.error?.message || error.response.statusText}`);
+            }
+            else {
+                throw new Error(`Failed to connect to OpenRouter: ${error.message}`);
+            }
+        }
     }
     async executeTool(toolCall) {
         const { name, arguments: args } = toolCall.function;
@@ -298,17 +322,30 @@ let AgentsService = AgentsService_1 = class AgentsService {
             if (timeoutId) {
                 clearTimeout(timeoutId);
             }
-            this.logger.error("Stream chat error:", error);
-            if (error.message && error.message.includes('cancelled')) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            this.logger.error(`Stream chat error: ${errorMessage}`);
+            if (errorMessage.includes('cancelled')) {
                 eventSender.sendEvent({
                     type: 'cancelled',
                     message: 'Request was cancelled'
                 });
             }
+            else if (errorMessage.includes('OpenRouter API key not configured')) {
+                eventSender.sendEvent({
+                    type: 'error',
+                    message: 'The OpenRouter API key is not configured. Please add your API key to the .env file.'
+                });
+            }
+            else if (errorMessage.includes('OpenRouter authentication failed')) {
+                eventSender.sendEvent({
+                    type: 'error',
+                    message: 'Authentication with OpenRouter failed. Please check your API key.'
+                });
+            }
             else {
                 eventSender.sendEvent({
                     type: 'error',
-                    message: error.message || "An error occurred during streaming"
+                    message: errorMessage || "An error occurred during streaming"
                 });
             }
             eventSender.end();
