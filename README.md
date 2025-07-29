@@ -91,6 +91,9 @@ npm run install-all  # Installs dependencies for all workspaces
 > **Note:** The default branch is `part-4-sse` which contains the complete project with Server-Sent Events implementation.
 
 2. **Setup environment:**
+
+There are FOUR .env files you need to update. In the three directories within the apps directory, remove the `.example` part of the file name `.env.example.`. The `main-app` also needs your open router key. The fourth .env file is at the root of the project and also needs you open router key.
+
 ```bash
 npm run setup
 ```
@@ -102,7 +105,7 @@ npm run setup
 
 The JWT_SECRET must be identical across all services for authentication to work.
 
-3. **Start all services:**
+1. **Start all services:**
 ```bash
 npm run dev
 ```
